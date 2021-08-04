@@ -1,6 +1,6 @@
 # m-explore ROS2 port
 
-ROS2 package port for (not yet multi) robot exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Foxy distro.
+ROS2 package port for (not yet multi) robot exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Foxy distro only.
 
 
 ### TB3
@@ -17,7 +17,7 @@ Building
 
 Build as a standard colcon package. There are no special dependencies needed
 (use rosdep to resolve dependencies in ROS). You should use brach specific for
-your release i.e. `foxy` for foxy. ROS2 branch is for foxy right now.
+your release i.e. `foxy` for foxy.
 
 RUNNING
 -------
