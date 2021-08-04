@@ -1,6 +1,6 @@
 # m-explore ROS2 port
 
-ROS2 package port for (not yet multi) robot exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Foxy distro only.
+ROS2 package port for (not yet multi) robot exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Foxy and Eloquent distros. For eloquent, check [eloquent](https://github.com/robo-friends/m-explore-ros2/tree/eloquent) branch.
 
 
 ### TB3
