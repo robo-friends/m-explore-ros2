@@ -1,0 +1,148 @@
+<<PackageHeader(explore_lite)>>
+
+<<GitHubIssues(hrnr/m-explore)>>
+
+<<TOC(4)>>
+
+== Overview ==
+This package provides greedy frontier-based exploration. When node is running, robot will greedily explore its environment until no frontiers could be found. Movement commands will be send to [[move_base]].
+
+{{attachment:screenshot.png||width="755px"}}
+
+Unlike similar packages, {{{explore_lite}}} does not create its own costmap, which makes it easier to configure and more efficient (lighter on resources). Node simply subscribes to <<MsgLink(nav_msgs/OccupancyGrid)>> messages. Commands for robot movement are send to [[move_base]] node.
+
+Node can do frontier filtering and can operate even on non-inflated maps. Goal blacklisting allows to deal with places inaccessible for robot.
+
+<<Youtube(op0L0LyGNwY&rel=0)>>
+
+== Architecture ==
+{{{explore_lite}}} uses [[move_base]] for navigation. You need to run properly configured [[move_base]] node.
+
+{{attachment:architecture.svg||width="755px"}}
+
+{{{explore_lite}}} subscribes to a <<MsgLink(nav_msgs/OccupancyGrid)>> and <<MsgLink(map_msgs/OccupancyGridUpdate)>> messages to construct a map where it looks for frontiers. You can either use costmap published by [[move_base]] (ie. `<move_base>/global_costmap/costmap`) or you can use map constructed by mapping algorithm (SLAM).
+
+Depending on your environment you may achieve better results with either SLAM map or costmap published by `move_base`. Advantage of `move_base` costmap is the inflation which helps to deal with some very small unexplorable frontiers. When you are using a raw map produced by SLAM you should set the `min_frontier_size` parameter to some reasonable number to deal with the small frontiers. For details on both setups check the `explore.launch` and `explore_costmap.launch` launch files.
+
+== Setup ==
+
+Before starting experimenting with {{{explore_lite}}} you need to have working [[move_base]] for navigation. You should be able to navigate with [[move_base]] manually through [[rviz]]. Please refer to [[navigation#Tutorials]] for setting up [[move_base]] and the rest of the navigation stack with your robot.
+
+You should be also able to to navigate with [[move_base]] though unknown space in the map. If you set the goal to unknown place in the map, planning and navigating should work. With most planners this should work by default, refer to [[navfn#Parameters]] if you need to setup this for [[navfn]] planner (but should be enabled by default). Navigation through unknown space is required for {{{explore_lite}}}.
+
+If you want to use costmap provided by [[move_base]] you need to enable unknown space tracking by setting `track_unknown_space: true`.
+
+If you have [[move_base]] configured correctly, you can start experimenting with {{{explore_lite}}}. Provided `explore.launch` should work out-of-the box in most cases, but as always you might need to adjust topic names and frame names according to your setup.
+
+== ROS API ==
+{{{
+#!clearsilver CS/NodeAPI
+
+name = explore
+desc = Provides exploration services offered by this package. Exploration will start immediately after node initialization.
+
+pub {
+  0.name  = ~frontiers
+  0.type = visualization_msgs/MarkerArray
+  0.desc = Visualization of frontiers considered by exploring algorithm. Each frontier is visualized by frontier points in blue and with a small sphere, which visualize the cost of the frontiers (costlier frontiers will have smaller spheres).
+}
+sub {
+  0.name = costmap
+  0.type = nav_msgs/OccupancyGrid
+  0.desc = Map which will be used for exploration planning. Can be either costmap from [[move_base]] or map created by SLAM (see above). Occupancy grid must have got properly marked unknown space, mapping algorithms usually track unknown space by default. If you want to use costmap provided by [[move_base]] you need to enable unknown space tracking by setting `track_unknown_space: true`.
+
+  1.name = costmap_updates
+  1.type = map_msgs/OccupancyGridUpdate
+  1.desc = Incremental updates on costmap. Not necessary if source of map is always publishing full updates, i.e. does not provide this topic.
+}
+
+param {
+  0.name = ~robot_base_frame
+  0.default = `base_link`
+  0.type = string
+  0.desc = The name of the base frame of the robot. This is used for determining robot position on map. Mandatory.
+
+  1.name = ~costmap_topic
+  1.default = `costmap`
+  1.type = string
+  1.desc = Specifies topic of source <<MsgLink(nav_msgs/OccupancyGrid)>>. Mandatory.
+
+  3.name = ~costmap_updates_topic
+  3.default = `costmap_updates`
+  3.type = string
+  3.desc = Specifies topic of source <<MsgLink(map_msgs/OccupancyGridUpdate)>>. Not necessary if source of map is always publishing full updates, i.e. does not provide this topic.
+
+  4.name = ~visualize
+  4.default = `false`
+  4.type = bool
+  4.desc = Specifies whether or not publish visualized frontiers.
+
+  6.name = ~planner_frequency
+  6.default = `1.0`
+  6.type = double
+  6.desc = Rate in Hz at which new frontiers will computed and goal reconsidered.
+
+  7.name = ~progress_timeout
+  7.default = `30.0`
+  7.type = double
+  7.desc = Time in seconds. When robot do not make any progress for `progress_timeout`, current goal will be abandoned.
+
+  8.name = ~potential_scale
+  8.default = `1e-3`
+  8.type = double
+  8.desc = Used for weighting frontiers. This multiplicative parameter affects frontier potential component of the frontier weight (distance to frontier).
+
+  9.name = ~orientation_scale
+  9.default = `0`
+  9.type = double
+  9.desc = Used for weighting frontiers. This multiplicative parameter affects frontier orientation component of the frontier weight. This parameter does currently nothing and is provided solely for forward compatibility.
+
+  10.name = ~gain_scale
+  10.default = `1.0`
+  10.type = double
+  10.desc = Used for weighting frontiers. This multiplicative parameter affects frontier gain component of the frontier weight (frontier size).
+
+  11.name = ~transform_tolerance
+  11.default = `0.3`
+  11.type = double
+  11.desc = Transform tolerance to use when transforming robot pose.
+
+  12.name = ~min_frontier_size
+  12.default = `0.5`
+  12.type = double
+  12.desc = Minimum size of the frontier to consider the frontier as the exploration goal. In meters.
+}
+
+req_tf {
+  0.from = global_frame
+  0.to = robot_base_frame
+  0.desc = This transformation is usually provided by mapping algorithm. Those frames are usually called `map` and `base_link`. For adjusting `robot_base_frame` name see respective parameter. You don't need to set `global_frame`. The name for `global_frame` will be sourced from `costmap_topic` automatically.
+}
+
+act_called {
+  0.name = move_base
+  0.type = move_base_msgs/MoveBaseAction
+  0.desc = [[move_base]] actionlib API for posting goals. See [[move_base#Action API]] for details. This expects [[move_base]] node in the same namespace as `explore_lite`, you may want to remap this node if this is not true.
+}
+}}}
+
+== Acknowledgements ==
+
+This package was developed as part of my bachelor thesis at [[http://www.mff.cuni.cz/to.en/|Charles University]] in Prague.
+
+{{{
+@masterthesis{Hörner2016,
+  author = {Jiří Hörner},
+  title = {Map-merging for multi-robot system},
+  address = {Prague},
+  year = {2016},
+  school = {Charles University in Prague, Faculty of Mathematics and Physics},
+  type = {Bachelor's thesis},
+  URL = {https://is.cuni.cz/webapps/zzp/detail/174125/},
+}
+}}}
+
+This project was initially based on [[explore]] package by Charles !DuHadway. Most of the node has been rewritten since then. The current frontier search algorithm is based on [[frontier_exploration]] by Paul Bovbel.
+
+## AUTOGENERATED DON'T DELETE
+## CategoryPackage
