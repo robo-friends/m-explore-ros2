@@ -4,6 +4,7 @@
  *
  *  Copyright (c) 2008, Robert Bosch LLC.
  *  Copyright (c) 2015-2016, Jiri Horner.
+ *  Copyright (c) 2021, Carlos Alvarez, Juan Galvis.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
