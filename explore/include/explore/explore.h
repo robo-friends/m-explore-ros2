@@ -58,7 +58,13 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 
 using namespace std::placeholders;
-
+#ifdef ELOQUENT
+#define ACTION_NAME "/NavigateToPose"
+#elif DASHING
+#define ACTION_NAME "/NavigateToPose"
+#else
+#define ACTION_NAME "/navigate_to_pose"
+#endif
 namespace explore
 {
 /**

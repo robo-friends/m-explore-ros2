@@ -15,6 +15,20 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# Set flag depending on distro
+if(NOT DEFINED ENV{ROS_DISTRO})
+  message(FATAL_ERROR "ROS_DISTRO is not defined." )
+endif()
+if("$ENV{ROS_DISTRO}" STREQUAL "eloquent")
+  message(STATUS "Build for ROS2 eloquent")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DELOQUENT")
+elseif("$ENV{ROS_DISTRO}" STREQUAL "dashing")
+  message(STATUS "Build for ROS2 dashing")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDASHING")
+else()
+  message(STATUS "BuilD for ROS2: " "$ENV{ROS_DISTRO}")
+endif()
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -27,7 +41,6 @@ find_package(nav2_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(map_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
-
 find_package(nav2_costmap_2d REQUIRED)
 
 
@@ -62,6 +75,7 @@ install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}
 )
+
 
 add_executable(explore
   src/costmap_client.cpp

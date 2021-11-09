@@ -68,12 +68,8 @@ Explore::Explore()
   this->get_parameter("gain_scale", gain_scale_);
   this->get_parameter("min_frontier_size", min_frontier_size);
   progress_timeout_ = timeout;
-
   move_base_client_ =
-      rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(this,
-                                                                      "/navigat"
-                                                                      "e_to_"
-                                                                      "pose");
+      rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(this,ACTION_NAME);
 
   search_ = frontier_exploration::FrontierSearch(costmap_client_.getCostmap(),
                                                  potential_scale_, gain_scale_,
