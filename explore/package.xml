@@ -17,7 +17,6 @@
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
-  <depend>utils</depend>
 
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
