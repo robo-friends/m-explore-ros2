@@ -1,6 +1,6 @@
 # m-explore ROS2 port
 
-ROS2 package port for (not yet multi) robot exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Foxy and Eloquent distros. For eloquent, check [eloquent](https://github.com/robo-friends/m-explore-ros2/tree/eloquent) branch.
+ROS2 package port for (not yet multi) robot exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Eloquent, Dashing, Foxy, and Galactic distros.
 
 
 ### TB3
@@ -21,8 +21,7 @@ Building
 --------
 
 Build as a standard colcon package. There are no special dependencies needed
-(use rosdep to resolve dependencies in ROS). You should use brach specific for
-your release i.e. `foxy` for foxy.
+(use rosdep to resolve dependencies in ROS). 
 
 RUNNING
 -------
