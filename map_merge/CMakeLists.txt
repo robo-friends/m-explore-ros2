@@ -28,13 +28,13 @@ find_package(Boost REQUIRED COMPONENTS thread)
 
 # OpenCV is required for merging without initial positions
 find_package(OpenCV REQUIRED)
-# if("${OpenCV_VERSION}" VERSION_LESS "3.0")
-# message(FATAL_ERROR "This package needs OpenCV >= 3.0")
-# endif()
-# if("${OpenCV_VERSION}" VERSION_LESS "4.0")
-# message(WARNING "This package supports OpenCV 3, but some features may not be "
-# "available. Upgrade to OpenCV 4 to take advantage of all features.")
-# endif()
+if("${OpenCV_VERSION}" VERSION_LESS "3.0")
+message(FATAL_ERROR "This package needs OpenCV >= 3.0")
+endif()
+if("${OpenCV_VERSION}" VERSION_LESS "4.0")
+message(WARNING "This package supports OpenCV 3, but some features may not be "
+"available. Upgrade to OpenCV 4 to take advantage of all features.")
+endif()
 
 set(DEPENDENCIES
   rclcpp
@@ -64,11 +64,11 @@ install(DIRECTORY
 )
 
 # we want static linking for now
-# add_library(combine_grids STATIC
-# src/combine_grids/grid_compositor.cpp
-# src/combine_grids/grid_warper.cpp
-# src/combine_grids/merging_pipeline.cpp
-# )
+add_library(combine_grids STATIC
+src/combine_grids/grid_compositor.cpp
+src/combine_grids/grid_warper.cpp
+src/combine_grids/merging_pipeline.cpp
+)
 
 add_executable(map_merge
   src/map_merge.cpp
@@ -80,12 +80,29 @@ add_executable(map_merge
 target_include_directories(map_merge PUBLIC
 $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 $<INSTALL_INTERFACE:include>)
+target_include_directories(combine_grids PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>"
+  ${rclcpp_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+)
 
+target_link_libraries(combine_grids ${rclcpp_LIBRARIES} ${OpenCV_LIBS})
 # target_link_libraries(combine_grids ${OpenCV_LIBRARIES})
-# target_link_libraries(map_merge combine_grids)
-target_link_libraries(map_merge)
+
+target_link_libraries(map_merge combine_grids)
+# target_link_libraries(map_merge)
 
 ament_target_dependencies(map_merge ${DEPENDENCIES})
+
+install(
+  TARGETS combine_grids
+  EXPORT export_combine_grids
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
 
 install(TARGETS map_merge
   DESTINATION lib/${PROJECT_NAME})
@@ -93,6 +110,7 @@ install(TARGETS map_merge
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
 ament_export_include_directories(include)
+ament_export_libraries(combine_grids)
 ament_package()
 
 

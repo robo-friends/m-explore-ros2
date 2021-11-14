@@ -43,11 +43,12 @@
 #include <mutex>
 #include <unordered_map>
 
-// #include <combine_grids/merging_pipeline.h>
-#include <geometry_msgs/msg/pose.hpp>
+#include <combine_grids/merging_pipeline.h>
+#include <geometry_msgs/msg/transform.hpp>
 #include <map_msgs/msg/occupancy_grid_update.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <rclcpp/rclcpp.hpp>
+
 #include <boost/thread.hpp>
 
 namespace map_merge
@@ -57,7 +58,7 @@ struct MapSubscription {
   // also protects reads and writes of shared_ptrs
   std::mutex mutex;
 
-  // geometry_msgs::msg::Transform initial_pose;
+  geometry_msgs::msg::Transform initial_pose;
   nav_msgs::msg::OccupancyGrid::Ptr writable_map;
   nav_msgs::msg::OccupancyGrid::ConstPtr readonly_map;
 
@@ -92,12 +93,12 @@ private:
   std::forward_list<MapSubscription> subscriptions_;
   size_t subscriptions_size_;
   boost::shared_mutex subscriptions_mutex_;
-  // combine_grids::MergingPipeline pipeline_;
+  combine_grids::MergingPipeline pipeline_;
   std::mutex pipeline_mutex_;
 
   std::string robotNameFromTopic(const std::string& topic);
   // bool isRobotMapTopic(const ros::master::TopicInfo& topic);
-  // bool getInitPose(const std::string& name, geometry_msgs::msg::Transform& pose);
+  bool getInitPose(const std::string& name, geometry_msgs::msg::Transform& pose);
 
   void fullMapUpdate(const nav_msgs::msg::OccupancyGrid::SharedPtr msg,
                      MapSubscription& map);

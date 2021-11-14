@@ -37,7 +37,7 @@
 #ifndef GRID_COMPOSITOR_H_
 #define GRID_COMPOSITOR_H_
 
-#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
 #include <opencv2/core/utility.hpp>
 
@@ -48,7 +48,7 @@ namespace internal
 class GridCompositor
 {
 public:
-  nav_msgs::OccupancyGrid::Ptr compose(const std::vector<cv::Mat>& grids,
+  nav_msgs::msg::OccupancyGrid::Ptr compose(const std::vector<cv::Mat>& grids,
                                        const std::vector<cv::Rect>& rois);
 };
 

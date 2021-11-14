@@ -326,9 +326,9 @@ std::string MapMerge::robotNameFromTopic(const std::string& topic)
 /*
  * Get robot's initial position
  */
-// bool MapMerge::getInitPose(const std::string& name,
-//                            geometry_msgs::Transform& pose)
-// {
+bool MapMerge::getInitPose(const std::string& name,
+                           geometry_msgs::msg::Transform& pose)
+{
   // std::string merging_namespace = ros::names::append(name, "map_merge");
   // double yaw = 0.0;
 
@@ -347,7 +347,7 @@ std::string MapMerge::robotNameFromTopic(const std::string& topic)
   // pose.rotation = toMsg(q);
 
   // return success;
-// }
+}
 
 /*
  * execute()
