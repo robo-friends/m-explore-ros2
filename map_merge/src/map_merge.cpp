@@ -54,7 +54,8 @@ subscriptions_size_(0)
   this->declare_parameter<double>("merging_rate", 4.0);
   this->declare_parameter<double>("discovery_rate", 0.05);
   this->declare_parameter<double>("estimation_rate", 0.5);
-  this->declare_parameter<bool>("known_init_poses", true);
+  // this->declare_parameter<bool>("known_init_poses", true);
+  this->declare_parameter<bool>("known_init_poses", false);
   this->declare_parameter<double>("estimation_confidence", 1.0);
   this->declare_parameter<std::string>("robot_map_topic", "map");
   this->declare_parameter<std::string>("robot_map_updates_topic", "map_updates");
@@ -79,6 +80,26 @@ subscriptions_size_(0)
   merged_map_publisher_ =
       this->create_publisher<nav_msgs::msg::OccupancyGrid>(merged_map_topic, 
       rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
+
+  // Timers
+  map_merging_timer_ = this->create_wall_timer(
+    std::chrono::milliseconds((uint16_t)(1000.0 / merging_rate_)),
+    [this]() { mapMerging(); });
+  // execute right away to simulate the ros1 first while loop on a thread
+  map_merging_timer_->execute_callback();
+  topic_subscribing_timer_ = this->create_wall_timer(
+    std::chrono::milliseconds((uint16_t)(1000.0 / discovery_rate_)),
+    [this]() { topicSubscribing(); });
+  // execute right away to simulate the ros1 first while loop on a thread
+  topic_subscribing_timer_->execute_callback(); 
+
+  if (have_initial_poses_){
+    pose_estimation_timer_ = this->create_wall_timer(
+      std::chrono::milliseconds((uint16_t)(1000.0 / estimation_rate_)),
+      [this]() { poseEstimation(); });
+    // execute right away to simulate the ros1 first while loop on a thread
+    pose_estimation_timer_->execute_callback(); 
+  }
 }
 
 /*
@@ -87,6 +108,7 @@ subscriptions_size_(0)
 void MapMerge::topicSubscribing()
 {
   RCLCPP_DEBUG(logger_, "Robot discovery started.");
+  RCLCPP_INFO_ONCE(logger_, "Robot discovery started.");
 
   // ros::master::V_TopicInfo topic_infos;
   geometry_msgs::msg::Transform init_pose;
@@ -98,7 +120,6 @@ void MapMerge::topicSubscribing()
   // I think in ROS2 it DOES initialize properly
   // init_pose.rotation.w = 1;  // create identity quaternion
 
-  RCLCPP_INFO(logger_, "Getting all topics");
   // ros::master::getTopics(topic_infos);
   std::map<std::string, std::vector<std::string>> topic_infos = this->get_topic_names_and_types();
 
@@ -172,6 +193,7 @@ void MapMerge::topicSubscribing()
 void MapMerge::mapMerging()
 {
   RCLCPP_DEBUG(logger_, "Map merging started.");
+  RCLCPP_INFO_ONCE(logger_, "Map merging started.");
 
   // TODO: FIX COMPILING THIS
   // if (have_initial_poses_) {
@@ -216,6 +238,7 @@ void MapMerge::mapMerging()
 void MapMerge::poseEstimation()
 {
   RCLCPP_DEBUG(logger_, "Grid pose estimation started.");
+  RCLCPP_INFO_ONCE(logger_, "Grid pose estimation started.");
   // TODO: FIX COMPILING THIS
   // // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
   // std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids;
@@ -460,7 +483,6 @@ int main(int argc, char** argv)
   
   // ROS2 code
   auto node = std::make_shared<map_merge::MapMerge>();
-  node->topicSubscribing();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;

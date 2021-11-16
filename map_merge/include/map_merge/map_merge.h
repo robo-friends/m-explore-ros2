@@ -95,6 +95,11 @@ private:
 
   rclcpp::Logger logger_ = rclcpp::get_logger("MapMergeNode");
 
+  // timers
+  rclcpp::TimerBase::SharedPtr map_merging_timer_;
+  rclcpp::TimerBase::SharedPtr topic_subscribing_timer_;
+  rclcpp::TimerBase::SharedPtr pose_estimation_timer_;
+
   std::string robotNameFromTopic(const std::string& topic);
   // bool isRobotMapTopic(const ros::master::TopicInfo& topic);
   bool isRobotMapTopic(const std::string topic, std::string type);
