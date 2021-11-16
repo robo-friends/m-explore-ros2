@@ -38,8 +38,9 @@
 #include <thread>
 
 #include <map_merge/map_merge.h>
+#include <map_merge/ros1_names.hpp>
 #include <rcpputils/asserts.hpp>
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 
 namespace map_merge
@@ -143,9 +144,9 @@ void MapMerge::topicSubscribing()
       subscription.initial_pose = init_pose;
 
       /* subscribe callbacks */
-      map_topic = append(robot_name, robot_map_topic_);
+      map_topic = ros1_names::append(robot_name, robot_map_topic_);
       map_updates_topic =
-          append(robot_name, robot_map_updates_topic_);
+          ros1_names::append(robot_name, robot_map_updates_topic_);
       RCLCPP_INFO(logger_, "Subscribing to MAP topic: %s.", map_topic.c_str());
       subscription.map_sub = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
           map_topic, 50,
@@ -345,15 +346,15 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
 
 std::string MapMerge::robotNameFromTopic(const std::string& topic)
 {
-  return parentNamespace(topic);
+  return ros1_names::parentNamespace(topic);
 }
 
 /* identifies topic via suffix */
 bool MapMerge::isRobotMapTopic(const std::string topic, std::string type)
 {
   /* test whether topic is robot_map_topic_ */
-  std::string topic_namespace = parentNamespace(topic);
-  bool is_map_topic = append(topic_namespace, robot_map_topic_) == topic;
+  std::string topic_namespace = ros1_names::parentNamespace(topic);
+  bool is_map_topic = ros1_names::append(topic_namespace, robot_map_topic_) == topic;
 
   // /* test whether topic contains *anywhere* robot namespace */
   auto pos = topic.find(robot_namespace_);
@@ -375,17 +376,17 @@ bool MapMerge::isRobotMapTopic(const std::string topic, std::string type)
 bool MapMerge::getInitPose(const std::string& name,
                            geometry_msgs::msg::Transform& pose)
 {
-  std::string merging_namespace = append(name, "map_merge");
+  std::string merging_namespace = ros1_names::append(name, "map_merge");
   double yaw = 0.0;
 
   bool success =
-      this->get_parameter(append(merging_namespace, "init_pose_x"),
+      this->get_parameter(ros1_names::append(merging_namespace, "init_pose_x"),
                       pose.translation.x) &&
-      this->get_parameter(append(merging_namespace, "init_pose_y"),
+      this->get_parameter(ros1_names::append(merging_namespace, "init_pose_y"),
                       pose.translation.y) &&
-      this->get_parameter(append(merging_namespace, "init_pose_z"),
+      this->get_parameter(ros1_names::append(merging_namespace, "init_pose_z"),
                       pose.translation.z) &&
-      this->get_parameter(append(merging_namespace, "init_pose_yaw"),
+      this->get_parameter(ros1_names::append(merging_namespace, "init_pose_yaw"),
                       yaw);
 
   tf2::Quaternion q;
