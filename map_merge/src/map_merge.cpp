@@ -39,6 +39,7 @@
 
 #include <map_merge/map_merge.h>
 #include <rcpputils/asserts.hpp>
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 
 namespace map_merge
@@ -87,69 +88,81 @@ void MapMerge::topicSubscribing()
   RCLCPP_DEBUG(logger_, "Robot discovery started.");
 
   // ros::master::V_TopicInfo topic_infos;
-  // geometry_msgs::msg::Transform init_pose;
-  // std::string robot_name;
-  // std::string map_topic;
-  // std::string map_updates_topic;
+  geometry_msgs::msg::Transform init_pose;
+  std::string robot_name;
+  std::string map_topic;
+  std::string map_updates_topic;
 
-  // ros::master::getTopics(topic_infos);
-  // // default msg constructor does no properly initialize quaternion
+  // ROS1 comment: default msg constructor does no properly initialize quaternion
+  // I think in ROS2 it DOES initialize properly
   // init_pose.rotation.w = 1;  // create identity quaternion
 
-  // for (const auto& topic : topic_infos) {
-  //   // we check only map topic
-  //   if (!isRobotMapTopic(topic)) {
-  //     continue;
-  //   }
+  RCLCPP_INFO(logger_, "Getting all topics");
+  // ros::master::getTopics(topic_infos);
+  std::map<std::string, std::vector<std::string>> topic_infos = this->get_topic_names_and_types();
 
-  //   robot_name = robotNameFromTopic(topic.name);
-  //   if (robots_.count(robot_name)) {
-  //     // we already know this robot
-  //     continue;
-  //   }
+  for (const auto& topic_it : topic_infos) {
+    std::string topic_name = topic_it.first;
+    std::vector<std::string> topic_types = topic_it.second;
+    // iterate over all topic types
+    for (const auto& topic_type : topic_types) {
+      RCLCPP_INFO(logger_, "Topic: %s, type: %s", topic_name.c_str(), topic_type.c_str());
 
-  //   if (have_initial_poses_ && !getInitPose(robot_name, init_pose)) {
-  //     RCLCPP_WARN(logger_, "Couldn't get initial position for robot [%s]\n"
-  //              "did you defined parameters map_merge/init_pose_[xyz]? in robot "
-  //              "namespace? If you want to run merging without known initial "
-  //              "positions of robots please set `known_init_poses` parameter "
-  //              "to false. See relavant documentation for details.",
-  //              robot_name.c_str());
-  //     continue;
-  //   }
+      // we check only map topic
+      if (!isRobotMapTopic(topic_name, topic_type)) {
+        continue;
+      }
+    
+      robot_name = robotNameFromTopic(topic_name);
+      if (robots_.count(robot_name)) {
+        // we already know this robot
+        continue;
+      }
 
-  //   RCLCPP_INFO(logger_, "adding robot [%s] to system", robot_name.c_str());
-  //   {
-  //     std::lock_guard<boost::shared_mutex> lock(subscriptions_mutex_);
-  //     subscriptions_.emplace_front();
-  //     ++subscriptions_size_;
-  //   }
+      if (have_initial_poses_ && !getInitPose(robot_name, init_pose)) {
+        RCLCPP_WARN(logger_, "Couldn't get initial position for robot [%s]\n"
+                "did you defined parameters map_merge/init_pose_[xyz]? in robot "
+                "namespace? If you want to run merging without known initial "
+                "positions of robots please set `known_init_poses` parameter "
+                "to false. See relevant documentation for details.",
+                robot_name.c_str());
+        continue;
+      }
 
-  //   // no locking here. robots_ are used only in this procedure
-  //   MapSubscription& subscription = subscriptions_.front();
-  //   robots_.insert({robot_name, &subscription});
-  //   subscription.initial_pose = init_pose;
+      // TODO: FIX THIS compile error with mutex :/
+      // RCLCPP_INFO(logger_, "adding robot [%s] to system", robot_name.c_str());
+      // {
+      //   std::lock_guard<boost::shared_mutex> lock(subscriptions_mutex_);
+      //   subscriptions_.emplace_front();
+      //   ++subscriptions_size_;
+      // }
 
-  //   /* subscribe callbacks */
-  //   map_topic = ros::names::append(robot_name, robot_map_topic_);
-  //   map_updates_topic =
-  //       ros::names::append(robot_name, robot_map_updates_topic_);
-  //   RCLCPP_INFO(logger_, "Subscribing to MAP topic: %s.", map_topic.c_str());
-  //   subscription.map_sub = node_.subscribe<nav_msgs::OccupancyGrid>(
-  //       map_topic, 50,
-  //       [this, &subscription](const nav_msgs::OccupancyGrid::ConstPtr& msg) {
-  //         fullMapUpdate(msg, subscription);
-  //       });
-  //   RCLCPP_INFO(logger_, "Subscribing to MAP updates topic: %s.",
-  //            map_updates_topic.c_str());
-  //   subscription.map_updates_sub =
-  //       node_.subscribe<map_msgs::OccupancyGridUpdate>(
-  //           map_updates_topic, 50,
-  //           [this, &subscription](
-  //               const map_msgs::OccupancyGridUpdate::ConstPtr& msg) {
-  //             partialMapUpdate(msg, subscription);
-  //           });
-  // }
+      // no locking here. robots_ are used only in this procedure
+      MapSubscription& subscription = subscriptions_.front();
+      robots_.insert({robot_name, &subscription});
+      subscription.initial_pose = init_pose;
+
+      /* subscribe callbacks */
+      map_topic = append(robot_name, robot_map_topic_);
+      map_updates_topic =
+          append(robot_name, robot_map_updates_topic_);
+      RCLCPP_INFO(logger_, "Subscribing to MAP topic: %s.", map_topic.c_str());
+      subscription.map_sub = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+          map_topic, 50,
+          [this, &subscription](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+            fullMapUpdate(msg, subscription);
+          });
+      RCLCPP_INFO(logger_, "Subscribing to MAP updates topic: %s.",
+              map_updates_topic.c_str());
+      subscription.map_updates_sub =
+          this->create_subscription<map_msgs::msg::OccupancyGridUpdate>(
+              map_updates_topic, 50,
+              [this, &subscription](
+                  const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg) {
+                partialMapUpdate(msg, subscription);
+              });
+    }
+  }
 }
 
 /*
@@ -332,30 +345,29 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
 
 std::string MapMerge::robotNameFromTopic(const std::string& topic)
 {
-  // return ros::names::parentNamespace(topic);
+  return parentNamespace(topic);
 }
 
 /* identifies topic via suffix */
-// bool MapMerge::isRobotMapTopic(const ros::master::TopicInfo& topic)
-// {
-  // /* test whether topic is robot_map_topic_ */
-  // std::string topic_namespace = ros::names::parentNamespace(topic.name);
-  // bool is_map_topic =
-  //     ros::names::append(topic_namespace, robot_map_topic_) == topic.name;
+bool MapMerge::isRobotMapTopic(const std::string topic, std::string type)
+{
+  /* test whether topic is robot_map_topic_ */
+  std::string topic_namespace = parentNamespace(topic);
+  bool is_map_topic = append(topic_namespace, robot_map_topic_) == topic;
 
   // /* test whether topic contains *anywhere* robot namespace */
-  // auto pos = topic.name.find(robot_namespace_);
-  // bool contains_robot_namespace = pos != std::string::npos;
+  auto pos = topic.find(robot_namespace_);
+  bool contains_robot_namespace = pos != std::string::npos;
 
   // /* we support only occupancy grids as maps */
-  // bool is_occupancy_grid = topic.datatype == "nav_msgs/OccupancyGrid";
+  bool is_occupancy_grid = type == "nav_msgs/OccupancyGrid";
 
   // /* we don't want to subcribe on published merged map */
-  // bool is_our_topic = merged_map_publisher_.getTopic() == topic.name;
+  bool is_our_topic = merged_map_publisher_->get_topic_name() == topic;
 
-  // return is_occupancy_grid && !is_our_topic && contains_robot_namespace &&
-  //        is_map_topic;
-// }
+  return is_occupancy_grid && !is_our_topic && contains_robot_namespace &&
+         is_map_topic;
+}
 
 /*
  * Get robot's initial position
@@ -363,24 +375,24 @@ std::string MapMerge::robotNameFromTopic(const std::string& topic)
 bool MapMerge::getInitPose(const std::string& name,
                            geometry_msgs::msg::Transform& pose)
 {
-  // std::string merging_namespace = ros::names::append(name, "map_merge");
-  // double yaw = 0.0;
+  std::string merging_namespace = append(name, "map_merge");
+  double yaw = 0.0;
 
-  // bool success =
-  //     ros::param::get(ros::names::append(merging_namespace, "init_pose_x"),
-  //                     pose.translation.x) &&
-  //     ros::param::get(ros::names::append(merging_namespace, "init_pose_y"),
-  //                     pose.translation.y) &&
-  //     ros::param::get(ros::names::append(merging_namespace, "init_pose_z"),
-  //                     pose.translation.z) &&
-  //     ros::param::get(ros::names::append(merging_namespace, "init_pose_yaw"),
-  //                     yaw);
+  bool success =
+      this->get_parameter(append(merging_namespace, "init_pose_x"),
+                      pose.translation.x) &&
+      this->get_parameter(append(merging_namespace, "init_pose_y"),
+                      pose.translation.y) &&
+      this->get_parameter(append(merging_namespace, "init_pose_z"),
+                      pose.translation.z) &&
+      this->get_parameter(append(merging_namespace, "init_pose_yaw"),
+                      yaw);
 
-  // tf2::Quaternion q;
-  // q.setEuler(0., 0., yaw);
-  // pose.rotation = toMsg(q);
+  tf2::Quaternion q;
+  q.setEuler(0., 0., yaw);
+  pose.rotation = toMsg(q);
 
-  // return success;
+  return success;
 }
 
 /*
@@ -447,6 +459,7 @@ int main(int argc, char** argv)
   
   // ROS2 code
   auto node = std::make_shared<map_merge::MapMerge>();
+  node->topicSubscribing();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
