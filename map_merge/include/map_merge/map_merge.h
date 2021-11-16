@@ -68,11 +68,9 @@ struct MapSubscription {
   rclcpp::Subscription<map_msgs::msg::OccupancyGridUpdate>::SharedPtr map_updates_sub;
 };
 
-class MapMerge
+class MapMerge : public rclcpp::Node
 {
 private:
-  // ros::NodeHandle node_;
-
   /* parameters */
   double merging_rate_;
   double discovery_rate_;
@@ -85,7 +83,6 @@ private:
   bool have_initial_poses_;
 
   // publishing
-  
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr merged_map_publisher_;
   // maps robots namespaces to maps. does not own
   std::unordered_map<std::string, MapSubscription*> robots_;
@@ -95,6 +92,8 @@ private:
   boost::shared_mutex subscriptions_mutex_;
   combine_grids::MergingPipeline pipeline_;
   std::mutex pipeline_mutex_;
+
+  rclcpp::Logger logger_ = rclcpp::get_logger("MapMergeNode");
 
   std::string robotNameFromTopic(const std::string& topic);
   // bool isRobotMapTopic(const ros::master::TopicInfo& topic);
