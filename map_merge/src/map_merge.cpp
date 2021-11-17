@@ -90,6 +90,15 @@ subscriptions_size_(0)
   topic_subscribing_timer_ = this->create_wall_timer(
     std::chrono::milliseconds((uint16_t)(1000.0 / discovery_rate_)),
     [this]() { topicSubscribing(); });
+
+  rclcpp::Rate r(100);
+  int i = 0;
+  while (rclcpp::ok() && i < 100) {
+    rclcpp::spin_some(this->get_node_base_interface());
+    r.sleep();
+    i++;
+  }
+
   // execute right away to simulate the ros1 first while loop on a thread
   topic_subscribing_timer_->execute_callback(); 
 
@@ -128,7 +137,7 @@ void MapMerge::topicSubscribing()
     std::vector<std::string> topic_types = topic_it.second;
     // iterate over all topic types
     for (const auto& topic_type : topic_types) {
-      RCLCPP_INFO(logger_, "Topic: %s, type: %s", topic_name.c_str(), topic_type.c_str());
+      // RCLCPP_INFO(logger_, "Topic: %s, type: %s", topic_name.c_str(), topic_type.c_str());
 
       // we check only map topic
       if (!isRobotMapTopic(topic_name, topic_type)) {
@@ -151,13 +160,15 @@ void MapMerge::topicSubscribing()
         continue;
       }
 
+      RCLCPP_INFO(logger_, "adding robot [%s] to system", robot_name.c_str());
       // TODO: FIX THIS compile error with mutex :/
-      // RCLCPP_INFO(logger_, "adding robot [%s] to system", robot_name.c_str());
       // {
       //   std::lock_guard<boost::shared_mutex> lock(subscriptions_mutex_);
       //   subscriptions_.emplace_front();
       //   ++subscriptions_size_;
       // }
+      subscriptions_.emplace_front();
+      ++subscriptions_size_;
 
       // no locking here. robots_ are used only in this procedure
       MapSubscription& subscription = subscriptions_.front();
@@ -384,7 +395,7 @@ bool MapMerge::isRobotMapTopic(const std::string topic, std::string type)
   bool contains_robot_namespace = pos != std::string::npos;
 
   // /* we support only occupancy grids as maps */
-  bool is_occupancy_grid = type == "nav_msgs/OccupancyGrid";
+  bool is_occupancy_grid = type == "nav_msgs/msg/OccupancyGrid";
 
   // /* we don't want to subcribe on published merged map */
   bool is_our_topic = merged_map_publisher_->get_topic_name() == topic;
