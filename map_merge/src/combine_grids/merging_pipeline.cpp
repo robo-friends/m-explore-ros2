@@ -159,13 +159,15 @@ nav_msgs::msg::OccupancyGrid::Ptr MergingPipeline::composeGrids()
   // for checking states. Throws a rcpputils::IllegalStateException if the condition fails.
   rcpputils::check_true(images_.size() == transforms_.size());
   rcpputils::check_true(images_.size() == grids_.size());
+  static rclcpp::Logger logger = rclcpp::get_logger("composeGrids");
 
   if (images_.empty()) {
+    RCLCPP_INFO(logger, "images empty");
     return nullptr;
   }
 
-  static rclcpp::Logger logger = rclcpp::get_logger("composeGrids");
   RCLCPP_DEBUG(logger, "warping grids");
+  RCLCPP_INFO(logger, "warping grids");
   internal::GridWarper warper;
   std::vector<cv::Mat> imgs_warped;
   imgs_warped.reserve(images_.size());

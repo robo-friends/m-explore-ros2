@@ -87,10 +87,12 @@ subscriptions_size_(0)
     [this]() { mapMerging(); });
   // execute right away to simulate the ros1 first while loop on a thread
   map_merging_timer_->execute_callback();
+
   topic_subscribing_timer_ = this->create_wall_timer(
     std::chrono::milliseconds((uint16_t)(1000.0 / discovery_rate_)),
     [this]() { topicSubscribing(); });
 
+  // For topicSubscribing() we need to spin briefly for the discovery to happen
   rclcpp::Rate r(100);
   int i = 0;
   while (rclcpp::ok() && i < 100) {
@@ -98,11 +100,9 @@ subscriptions_size_(0)
     r.sleep();
     i++;
   }
-
-  // execute right away to simulate the ros1 first while loop on a thread
   topic_subscribing_timer_->execute_callback(); 
 
-  if (have_initial_poses_){
+  if (!have_initial_poses_){
     pose_estimation_timer_ = this->create_wall_timer(
       std::chrono::milliseconds((uint16_t)(1000.0 / estimation_rate_)),
       [this]() { poseEstimation(); });
@@ -233,10 +233,12 @@ void MapMerge::mapMerging()
     merged_map = pipeline_.composeGrids();
   }
   if (!merged_map) {
+    RCLCPP_INFO(logger_, "No map merged");
     return;
   }
 
   RCLCPP_DEBUG(logger_, "all maps merged, publishing");
+  RCLCPP_INFO(logger_, "all maps merged, publishing");
   auto now = this->now();
   merged_map->info.map_load_time = now;
   merged_map->header.stamp = now;
@@ -250,10 +252,10 @@ void MapMerge::poseEstimation()
 {
   RCLCPP_DEBUG(logger_, "Grid pose estimation started.");
   RCLCPP_INFO_ONCE(logger_, "Grid pose estimation started.");
+  // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
+  std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids;
+  grids.reserve(subscriptions_size_);
   // TODO: FIX COMPILING THIS
-  // // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
-  // std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids;
-  // grids.reserve(subscriptions_size_);
   // {
   //   boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
   //   for (auto& subscription : subscriptions_) {
@@ -261,12 +263,17 @@ void MapMerge::poseEstimation()
   //     grids.push_back(subscription.readonly_map);
   //   }
   // }
+  // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
+  for (auto& subscription : subscriptions_) {
+    // std::lock_guard<std::mutex> s_lock(subscription.mutex);
+    grids.push_back(subscription.readonly_map);
+  }
 
-  // std::lock_guard<std::mutex> lock(pipeline_mutex_);
-  // pipeline_.feed(grids.begin(), grids.end());
-  // // TODO allow user to change feature type
-  // pipeline_.estimateTransforms(combine_grids::FeatureType::AKAZE,
-  //                              confidence_threshold_);
+  std::lock_guard<std::mutex> lock(pipeline_mutex_);
+  pipeline_.feed(grids.begin(), grids.end());
+  // TODO allow user to change feature type
+  pipeline_.estimateTransforms(combine_grids::FeatureType::AKAZE,
+                               confidence_threshold_);
 }
 
 // void MapMerge::fullMapUpdate(const nav_msgs::OccupancyGrid::ConstPtr& msg,
@@ -275,6 +282,7 @@ void MapMerge::fullMapUpdate(const nav_msgs::msg::OccupancyGrid::SharedPtr msg,
                      MapSubscription& subscription)
 {
   RCLCPP_DEBUG(logger_, "received full map update");
+  RCLCPP_INFO(logger_, "received full map update");
   std::lock_guard<std::mutex> lock(subscription.mutex);
   // if (subscription.readonly_map &&
   //     subscription.readonly_map->header.stamp > msg->header.stamp) {
