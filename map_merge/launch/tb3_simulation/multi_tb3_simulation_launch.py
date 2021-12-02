@@ -46,16 +46,15 @@ def generate_launch_description():
     map_merge_dir = get_package_share_directory("multirobot_map_merge")
     launch_dir_map_merge = os.path.join(map_merge_dir, "launch", "tb3_simulation")
 
-    # Names and poses of the robots
+    # Names and poses of the robots for known poses demo
     robots = [
         {"name": "robot1", "x_pose": 0.0, "y_pose": 0.5, "z_pose": 0.01},
-        {"name": "robot2", "x_pose": 0.0, "y_pose": -0.5, "z_pose": 0.01},
+        {"name": "robot2", "x_pose": -3.0, "y_pose": 1.5, "z_pose": 0.01},
     ]
+    # Names and poses of the robots for unknown poses demo, the must be very close at beggining
     robots = [
         {"name": "robot1", "x_pose": -2.0, "y_pose": 0.5, "z_pose": 0.01},
         {"name": "robot2", "x_pose": -3.0, "y_pose": 0.5, "z_pose": 0.01},
-        # {"name": "robot1", "x_pose": 0.0, "y_pose": 0.5, "z_pose": 0.01},
-        # {"name": "robot2", "x_pose": -3.0, "y_pose": 1.5, "z_pose": 0.01},
     ]
 
     # Simulation settings
