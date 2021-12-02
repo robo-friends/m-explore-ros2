@@ -45,24 +45,25 @@
 
 namespace map_merge
 {
-MapMerge::MapMerge() : Node("map_merge"),
+MapMerge::MapMerge() : Node("map_merge", rclcpp::NodeOptions()
+                                       .allow_undeclared_parameters(true)
+                                       .automatically_declare_parameters_from_overrides(true)),
 subscriptions_size_(0)
 {
   std::string frame_id;
   std::string merged_map_topic;
 
-  this->declare_parameter<double>("merging_rate", 4.0);
-  this->declare_parameter<double>("discovery_rate", 0.05);
-  this->declare_parameter<double>("estimation_rate", 0.5);
-  // this->declare_parameter<bool>("known_init_poses", true);
-  this->declare_parameter<bool>("known_init_poses", false);
-  this->declare_parameter<double>("estimation_confidence", 1.0);
-  this->declare_parameter<std::string>("robot_map_topic", "map");
-  this->declare_parameter<std::string>("robot_map_updates_topic", "map_updates");
-  this->declare_parameter<std::string>("robot_namespace", "");
-  this->declare_parameter<std::string>("merged_map_topic", "map");
-  this->declare_parameter<std::string>("world_frame", "world");
-
+  if (!this->has_parameter("merging_rate")) this->declare_parameter<double>("merging_rate", 4.0);
+  if (!this->has_parameter("discovery_rate")) this->declare_parameter<double>("discovery_rate", 0.05);
+  if (!this->has_parameter("estimation_rate")) this->declare_parameter<double>("estimation_rate", 0.5);
+  if (!this->has_parameter("known_init_poses")) this->declare_parameter<bool>("known_init_poses", true);
+  if (!this->has_parameter("estimation_confidence")) this->declare_parameter<double>("estimation_confidence", 1.0);
+  if (!this->has_parameter("robot_map_topic")) this->declare_parameter<std::string>("robot_map_topic", "map");
+  if (!this->has_parameter("robot_map_updates_topic")) this->declare_parameter<std::string>("robot_map_updates_topic", "map_updates");
+  if (!this->has_parameter("robot_namespace")) this->declare_parameter<std::string>("robot_namespace", "");
+  if (!this->has_parameter("merged_map_topic")) this->declare_parameter<std::string>("merged_map_topic", "map");
+  if (!this->has_parameter("world_frame")) this->declare_parameter<std::string>("world_frame", "world");
+  
   this->get_parameter("merging_rate", merging_rate_);
   this->get_parameter("discovery_rate", discovery_rate_);
   this->get_parameter("estimation_rate", estimation_rate_);
@@ -162,13 +163,11 @@ void MapMerge::topicSubscribing()
 
       RCLCPP_INFO(logger_, "adding robot [%s] to system", robot_name.c_str());
       // TODO: FIX THIS compile error with mutex :/
-      // {
-      //   std::lock_guard<boost::shared_mutex> lock(subscriptions_mutex_);
-      //   subscriptions_.emplace_front();
-      //   ++subscriptions_size_;
-      // }
-      subscriptions_.emplace_front();
-      ++subscriptions_size_;
+      {
+        // std::lock_guard<boost::shared_mutex> lock(subscriptions_mutex_);
+        subscriptions_.emplace_front();
+        ++subscriptions_size_;
+      }
 
       // no locking here. robots_ are used only in this procedure
       MapSubscription& subscription = subscriptions_.front();
@@ -207,24 +206,24 @@ void MapMerge::mapMerging()
   RCLCPP_INFO_ONCE(logger_, "Map merging started.");
 
   // TODO: FIX COMPILING THIS
-  // if (have_initial_poses_) {
-  //   // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
-  //   std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids;
-  //   std::vector<geometry_msgs::msg::Transform> transforms;
-  //   grids.reserve(subscriptions_size_);
-  //   {
-  //     boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
-  //     for (auto& subscription : subscriptions_) {
-  //       std::lock_guard<std::mutex> s_lock(subscription.mutex);
-  //       grids.push_back(subscription.readonly_map);
-  //       transforms.push_back(subscription.initial_pose);
-  //     }
-  //   }
-  //   // we don't need to lock here, because when have_initial_poses_ is true we
-  //   // will not run concurrently on the pipeline
-  //   pipeline_.feed(grids.begin(), grids.end());
-  //   pipeline_.setTransforms(transforms.begin(), transforms.end());
-  // }
+  if (have_initial_poses_) {
+    // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
+    std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids;
+    std::vector<geometry_msgs::msg::Transform> transforms;
+    grids.reserve(subscriptions_size_);
+    {
+      // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
+      for (auto& subscription : subscriptions_) {
+        // std::lock_guard<std::mutex> s_lock(subscription.mutex);
+        grids.push_back(subscription.readonly_map);
+        transforms.push_back(subscription.initial_pose);
+      }
+    }
+    // we don't need to lock here, because when have_initial_poses_ is true we
+    // will not run concurrently on the pipeline
+    pipeline_.feed(grids.begin(), grids.end());
+    pipeline_.setTransforms(transforms.begin(), transforms.end());
+  }
 
   // nav_msgs::OccupancyGridPtr merged_map;
   nav_msgs::msg::OccupancyGrid::Ptr merged_map;
@@ -233,12 +232,12 @@ void MapMerge::mapMerging()
     merged_map = pipeline_.composeGrids();
   }
   if (!merged_map) {
-    RCLCPP_INFO(logger_, "No map merged");
+    // RCLCPP_INFO(logger_, "No map merged");
     return;
   }
 
   RCLCPP_DEBUG(logger_, "all maps merged, publishing");
-  RCLCPP_INFO(logger_, "all maps merged, publishing");
+  // RCLCPP_INFO(logger_, "all maps merged, publishing");
   auto now = this->now();
   merged_map->info.map_load_time = now;
   merged_map->header.stamp = now;
@@ -255,25 +254,32 @@ void MapMerge::poseEstimation()
   // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
   std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids;
   grids.reserve(subscriptions_size_);
+
   // TODO: FIX COMPILING THIS
-  // {
-  //   boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
-  //   for (auto& subscription : subscriptions_) {
-  //     std::lock_guard<std::mutex> s_lock(subscription.mutex);
-  //     grids.push_back(subscription.readonly_map);
-  //   }
-  // }
-  // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
-  for (auto& subscription : subscriptions_) {
-    // std::lock_guard<std::mutex> s_lock(subscription.mutex);
-    grids.push_back(subscription.readonly_map);
+  {
+    // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
+    for (auto& subscription : subscriptions_) {
+      // std::lock_guard<std::mutex> s_lock(subscription.mutex);
+      grids.push_back(subscription.readonly_map);
+    }
   }
+
+  // Print grids size
+  // RCLCPP_INFO(logger_, "Grids size: %d", grids.size());
+
 
   std::lock_guard<std::mutex> lock(pipeline_mutex_);
   pipeline_.feed(grids.begin(), grids.end());
   // TODO allow user to change feature type
-  pipeline_.estimateTransforms(combine_grids::FeatureType::AKAZE,
+  bool success = pipeline_.estimateTransforms(combine_grids::FeatureType::AKAZE,
                                confidence_threshold_);
+  // bool success = pipeline_.estimateTransforms(combine_grids::FeatureType::SURF,
+  //                              confidence_threshold_);
+  // bool success = pipeline_.estimateTransforms(combine_grids::FeatureType::ORB,
+  //                              confidence_threshold_);
+  if (!success) {
+    RCLCPP_INFO(logger_, "No grid poses estimated");
+  }
 }
 
 // void MapMerge::fullMapUpdate(const nav_msgs::OccupancyGrid::ConstPtr& msg,
@@ -282,7 +288,7 @@ void MapMerge::fullMapUpdate(const nav_msgs::msg::OccupancyGrid::SharedPtr msg,
                      MapSubscription& subscription)
 {
   RCLCPP_DEBUG(logger_, "received full map update");
-  RCLCPP_INFO(logger_, "received full map update");
+  // RCLCPP_INFO(logger_, "received full map update");
   std::lock_guard<std::mutex> lock(subscription.mutex);
   // if (subscription.readonly_map &&
   //     subscription.readonly_map->header.stamp > msg->header.stamp) {

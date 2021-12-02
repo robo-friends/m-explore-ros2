@@ -42,10 +42,20 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory("nav2_bringup")
     launch_dir = os.path.join(bringup_dir, "launch")
 
+    # Get the launch directory for multirobot_map_merge where we have a modified launch files
+    map_merge_dir = get_package_share_directory("multirobot_map_merge")
+    launch_dir_map_merge = os.path.join(map_merge_dir, "launch", "tb3_simulation")
+
     # Names and poses of the robots
     robots = [
         {"name": "robot1", "x_pose": 0.0, "y_pose": 0.5, "z_pose": 0.01},
         {"name": "robot2", "x_pose": 0.0, "y_pose": -0.5, "z_pose": 0.01},
+    ]
+    robots = [
+        {"name": "robot1", "x_pose": -2.0, "y_pose": 0.5, "z_pose": 0.01},
+        {"name": "robot2", "x_pose": -3.0, "y_pose": 0.5, "z_pose": 0.01},
+        # {"name": "robot1", "x_pose": 0.0, "y_pose": 0.5, "z_pose": 0.01},
+        # {"name": "robot2", "x_pose": -3.0, "y_pose": 1.5, "z_pose": 0.01},
     ]
 
     # Simulation settings
@@ -98,7 +108,7 @@ def generate_launch_description():
 
     declare_autostart_cmd = DeclareLaunchArgument(
         "autostart",
-        default_value="false",
+        default_value="true",
         description="Automatically startup the stacks",
     )
 
@@ -116,6 +126,17 @@ def generate_launch_description():
 
     declare_use_rviz_cmd = DeclareLaunchArgument(
         "use_rviz", default_value="True", description="Whether to start RVIZ"
+    )
+
+    slam_toolbox = LaunchConfiguration("slam_toolbox")
+    slam_gmapping = LaunchConfiguration("slam_gmapping")
+    declare_slam_toolbox_cmd = DeclareLaunchArgument(
+        "slam_toolbox", default_value="False", description="Whether run a SLAM toolbox"
+    )
+    declare_slam_gmapping_cmd = DeclareLaunchArgument(
+        "slam_gmapping",
+        default_value="False",
+        description="Whether run a SLAM gmapping",
     )
 
     # Start Gazebo with plugin providing the robot spawing service
@@ -170,7 +191,7 @@ def generate_launch_description():
                 ),
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
-                        os.path.join(bringup_dir, "launch", "tb3_simulation_launch.py")
+                        os.path.join(launch_dir_map_merge, "tb3_simulation_launch.py")
                     ),
                     launch_arguments={
                         "namespace": robot["name"],
@@ -183,6 +204,8 @@ def generate_launch_description():
                         "use_simulator": "False",
                         "headless": "False",
                         "slam": "True",
+                        "slam_toolbox": slam_toolbox,
+                        "slam_gmapping": slam_gmapping,
                         "use_robot_state_pub": use_robot_state_pub,
                     }.items(),
                 ),
@@ -232,6 +255,8 @@ def generate_launch_description():
     ld.add_action(declare_autostart_cmd)
     ld.add_action(declare_rviz_config_file_cmd)
     ld.add_action(declare_use_robot_state_pub_cmd)
+    ld.add_action(declare_slam_toolbox_cmd)
+    ld.add_action(declare_slam_gmapping_cmd)
 
     # Add the actions to start gazebo, robots and simulations
     ld.add_action(start_gazebo_cmd)

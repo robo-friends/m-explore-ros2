@@ -70,6 +70,7 @@ private:
   std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids_;
   std::vector<cv::Mat> images_;
   std::vector<cv::Mat> transforms_;
+  double max_confidence_achieved_ = 0.0;
 };
 
 template <typename InputIt>
