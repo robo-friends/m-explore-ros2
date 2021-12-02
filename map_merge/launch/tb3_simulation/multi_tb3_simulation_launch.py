@@ -74,7 +74,7 @@ def generate_launch_description():
     # Declare the launch arguments
     declare_world_cmd = DeclareLaunchArgument(
         "world",
-        default_value=os.path.join(bringup_dir, "worlds", "world_only.model"),
+        default_value=os.path.join(launch_dir_map_merge, "worlds", "world_only.model"),
         description="Full path to world file to load",
     )
 
@@ -93,7 +93,7 @@ def generate_launch_description():
     declare_robot1_params_file_cmd = DeclareLaunchArgument(
         "robot1_params_file",
         default_value=os.path.join(
-            bringup_dir, "params", "nav2_multirobot_params_1.yaml"
+            launch_dir_map_merge, "config", "nav2_multirobot_params_1.yaml"
         ),
         description="Full path to the ROS2 parameters file to use for robot1 launched nodes",
     )
@@ -101,7 +101,7 @@ def generate_launch_description():
     declare_robot2_params_file_cmd = DeclareLaunchArgument(
         "robot2_params_file",
         default_value=os.path.join(
-            bringup_dir, "params", "nav2_multirobot_params_2.yaml"
+            launch_dir_map_merge, "config", "nav2_multirobot_params_2.yaml"
         ),
         description="Full path to the ROS2 parameters file to use for robot2 launched nodes",
     )
