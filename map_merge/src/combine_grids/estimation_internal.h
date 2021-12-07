@@ -3,6 +3,7 @@
  * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2015-2016, Jiri Horner.
+ *  Copyright (c) 2021, Carlos Alvarez.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
