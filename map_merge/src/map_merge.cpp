@@ -42,37 +42,40 @@
 #include <rcpputils/asserts.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-void padMapToWidthHeight(nav_msgs::msg::OccupancyGrid& map, unsigned int width, unsigned int height)
+nav_msgs::msg::OccupancyGrid::ConstSharedPtr padMapToWidthHeight(nav_msgs::msg::OccupancyGrid::ConstSharedPtr map, unsigned int width, unsigned int height)
 {
-  if (map.info.width == width && map.info.height == height) {
-    return;
+  if (map->info.width == width && map->info.height == height) {
+    return map;
   }
 
-  nav_msgs::msg::OccupancyGrid padded_map;
-  padded_map.header = map.header;
-  padded_map.info = map.info;
-  padded_map.info.width = width;
-  padded_map.info.height = height;
-  padded_map.data.resize(width * height);
+  nav_msgs::msg::OccupancyGrid::SharedPtr padded_map;
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr padded_map_const;
+  padded_map->header = map->header;
+  padded_map->info = map->info;
+  padded_map->info.width = width;
+  padded_map->info.height = height;
+  padded_map->data.resize(width * height);
 
   // copy data
-  for (unsigned int y = 0; y < map.info.height; ++y) {
-    for (unsigned int x = 0; x < map.info.width; ++x) {
-      padded_map.data[y * width + x] = map.data[y * map.info.width + x];
+  for (unsigned int y = 0; y < map->info.height; ++y) {
+    for (unsigned int x = 0; x < map->info.width; ++x) {
+      padded_map->data[y * width + x] = map->data[y * map->info.width + x];
     }
   }
 
   // fill in the rest with unknown
   for (unsigned int y = 0; y < height; ++y) {
     for (unsigned int x = 0; x < width; ++x) {
-      if (x < map.info.width && y < map.info.height) {
+      if (x < map->info.width && y < map->info.height) {
         continue;
       }
-      padded_map.data[y * width + x] = -1;
+      padded_map->data[y * width + x] = -1;
     }
   }
 
-  map = padded_map;
+  // map = padded_map;
+  padded_map_const = padded_map;
+  return padded_map_const;
 }
 
 namespace map_merge
@@ -238,7 +241,18 @@ void MapMerge::mapMerging()
   RCLCPP_INFO_ONCE(logger_, "Map merging started.");
 
   if (have_initial_poses_) {
-    // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
+    // TODO: attempt fix for SLAM toolbox: add method for padding grids to same size
+    unsigned int max_width = 0;
+    unsigned int max_height = 0;
+    for (auto& subscription : subscriptions_) {
+      if (subscription.readonly_map->info.width > max_width) {
+        max_width = subscription.readonly_map->info.width;
+      }
+      if (subscription.readonly_map->info.height > max_height) {
+        max_height = subscription.readonly_map->info.height;
+      }
+    }
+
     std::vector<nav_msgs::msg::OccupancyGrid::ConstSharedPtr> grids;
     std::vector<geometry_msgs::msg::Transform> transforms;
     grids.reserve(subscriptions_size_);
@@ -247,25 +261,18 @@ void MapMerge::mapMerging()
       // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
       for (auto& subscription : subscriptions_) {
         // std::lock_guard<std::mutex> s_lock(subscription.mutex);
+
+        // Now pad the grids to the max size using padMapToHeightWidth
+        // for (auto& grid : grids) {
+        //   padMapToWidthHeight(grid, max_width, max_height);
+        // }
+        // auto padded_grid = padMapToWidthHeight(subscription.readonly_map, max_width, max_height);
+        // grids.push_back(padded_grid);
+
         grids.push_back(subscription.readonly_map);
         transforms.push_back(subscription.initial_pose);
       }
     }
-    // TODO: attempt fix for SLAM toolbox: add method for padding grids to same size
-    unsigned int max_width = 0;
-    unsigned int max_height = 0;
-    for (auto& grid : grids) {
-      if (grid->info.width > max_width) {
-        max_width = grid->info.width;
-      }
-      if (grid->info.height > max_height) {
-        max_height = grid->info.height;
-      }
-    }
-    // Now pad the grids to the max size using padMapToHeightWidth
-    // for (auto& grid : grids) {
-    //   padMapToWidthHeight(grid, max_width, max_height);
-    // }
 
 
     // we don't need to lock here, because when have_initial_poses_ is true we
