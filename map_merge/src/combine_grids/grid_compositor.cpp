@@ -45,12 +45,12 @@ namespace combine_grids
 {
 namespace internal
 {
-nav_msgs::msg::OccupancyGrid::Ptr GridCompositor::compose(
+nav_msgs::msg::OccupancyGrid::SharedPtr GridCompositor::compose(
     const std::vector<cv::Mat>& grids, const std::vector<cv::Rect>& rois)
 {
   rcpputils::require_true(grids.size() == rois.size());
 
-  nav_msgs::msg::OccupancyGrid::Ptr result_grid(new nav_msgs::msg::OccupancyGrid());
+  nav_msgs::msg::OccupancyGrid::SharedPtr result_grid(new nav_msgs::msg::OccupancyGrid());
 
   std::vector<cv::Point> corners;
   corners.reserve(grids.size());

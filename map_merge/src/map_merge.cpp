@@ -275,7 +275,7 @@ void MapMerge::mapMerging()
   }
 
   // nav_msgs::OccupancyGridPtr merged_map;
-  nav_msgs::msg::OccupancyGrid::Ptr merged_map;
+  nav_msgs::msg::OccupancyGrid::SharedPtr merged_map;
   {
     std::lock_guard<std::mutex> lock(pipeline_mutex_);
     merged_map = pipeline_.composeGrids();
@@ -376,7 +376,7 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
 
   // nav_msgs::OccupancyGridPtr map;
   // nav_msgs::OccupancyGridConstPtr readonly_map;  // local copy
-  nav_msgs::msg::OccupancyGrid::Ptr map;
+  nav_msgs::msg::OccupancyGrid::SharedPtr map;
   nav_msgs::msg::OccupancyGrid::ConstPtr readonly_map;  // local copy
   {
     // load maps

@@ -60,7 +60,7 @@ public:
   void feed(InputIt grids_begin, InputIt grids_end);
   bool estimateTransforms(FeatureType feature = FeatureType::AKAZE,
                           double confidence = 1.0);
-  nav_msgs::msg::OccupancyGrid::Ptr composeGrids();
+  nav_msgs::msg::OccupancyGrid::SharedPtr composeGrids();
 
   std::vector<geometry_msgs::msg::Transform> getTransforms() const;
   template <typename InputIt>

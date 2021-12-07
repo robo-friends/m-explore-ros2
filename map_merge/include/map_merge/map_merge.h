@@ -59,7 +59,7 @@ struct MapSubscription {
   std::mutex mutex;
 
   geometry_msgs::msg::Transform initial_pose;
-  nav_msgs::msg::OccupancyGrid::Ptr writable_map;
+  nav_msgs::msg::OccupancyGrid::SharedPtr writable_map;
   nav_msgs::msg::OccupancyGrid::ConstPtr readonly_map;
 
   // ros::Subscriber map_sub;
