@@ -131,8 +131,14 @@ void Explore::visualizeFrontiers(
   m.color.b = 255;
   m.color.a = 255;
   // lives forever
-  // m.lifetime = ros::Duration(0);
-  m.lifetime = rclcpp::Duration(0);
+#ifdef ELOQUENT
+  m.lifetime = rclcpp::Duration(0); // deprecated in galactic warning
+#elif DASHING
+  m.lifetime = rclcpp::Duration(0); // deprecated in galactic warning
+#else
+  m.lifetime = rclcpp::Duration::from_seconds(0); // foxy onwards
+#endif
+  // m.lifetime = rclcpp::Duration::from_nanoseconds(0); // suggested in galactic
   m.frame_locked = true;
 
   // weighted frontiers are always sorted
