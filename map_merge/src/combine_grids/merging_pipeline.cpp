@@ -218,7 +218,7 @@ nav_msgs::msg::OccupancyGrid::Ptr MergingPipeline::composeGrids()
   result = compositor.compose(imgs_warped, rois);
 
   // set correct resolution to output grid. use resolution of identity (works
-  // for estimated trasforms), or any resolution (works for know_init_positions)
+  // for estimated transforms), or any resolution (works for know_init_positions)
   // - in that case all resolutions should be the same.
   float any_resolution = 0.0;
   for (size_t i = 0; i < transforms_.size(); ++i) {

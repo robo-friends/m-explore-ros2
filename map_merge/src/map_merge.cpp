@@ -42,6 +42,38 @@
 #include <rcpputils/asserts.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+void padMapToWidthHeight(nav_msgs::msg::OccupancyGrid& map, int width, int height)
+{
+  if (map.info.width == width && map.info.height == height) {
+    return;
+  }
+
+  nav_msgs::msg::OccupancyGrid padded_map;
+  padded_map.header = map.header;
+  padded_map.info = map.info;
+  padded_map.info.width = width;
+  padded_map.info.height = height;
+  padded_map.data.resize(width * height);
+
+  // copy data
+  for (int y = 0; y < map.info.height; ++y) {
+    for (int x = 0; x < map.info.width; ++x) {
+      padded_map.data[y * width + x] = map.data[y * map.info.width + x];
+    }
+  }
+
+  // fill in the rest with unknown
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      if (x < map.info.width && y < map.info.height) {
+        continue;
+      }
+      padded_map.data[y * width + x] = -1;
+    }
+  }
+
+  map = padded_map;
+}
 
 namespace map_merge
 {
@@ -162,8 +194,8 @@ void MapMerge::topicSubscribing()
       }
 
       RCLCPP_INFO(logger_, "adding robot [%s] to system", robot_name.c_str());
-      // TODO: FIX THIS compile error with mutex :/
       {
+        // We don't lock since because of ROS2 default executor only a callback can run at a time
         // std::lock_guard<boost::shared_mutex> lock(subscriptions_mutex_);
         subscriptions_.emplace_front();
         ++subscriptions_size_;
@@ -205,13 +237,13 @@ void MapMerge::mapMerging()
   RCLCPP_DEBUG(logger_, "Map merging started.");
   RCLCPP_INFO_ONCE(logger_, "Map merging started.");
 
-  // TODO: FIX COMPILING THIS
   if (have_initial_poses_) {
     // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
     std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids;
     std::vector<geometry_msgs::msg::Transform> transforms;
     grids.reserve(subscriptions_size_);
     {
+      // We don't lock since because of ROS2 default executor only a callback can run
       // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
       for (auto& subscription : subscriptions_) {
         // std::lock_guard<std::mutex> s_lock(subscription.mutex);
@@ -219,6 +251,23 @@ void MapMerge::mapMerging()
         transforms.push_back(subscription.initial_pose);
       }
     }
+    // TODO: attempt fix for SLAM toolbox: add method for padding grids to same size
+    int max_width = 0;
+    int max_height = 0;
+    for (auto& grid : grids) {
+      if (grid->info.width > max_width) {
+        max_width = grid->info.width;
+      }
+      if (grid->info.height > max_height) {
+        max_height = grid->info.height;
+      }
+    }
+    // Now pad the grids to the max size using padMapToHeightWidth
+    // for (auto& grid : grids) {
+    //   padMapToWidthHeight(grid, max_width, max_height);
+    // }
+
+
     // we don't need to lock here, because when have_initial_poses_ is true we
     // will not run concurrently on the pipeline
     pipeline_.feed(grids.begin(), grids.end());
@@ -255,8 +304,8 @@ void MapMerge::poseEstimation()
   std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids;
   grids.reserve(subscriptions_size_);
 
-  // TODO: FIX COMPILING THIS
   {
+    // We don't lock since because of ROS2 default executor only a callback can run
     // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
     for (auto& subscription : subscriptions_) {
       // std::lock_guard<std::mutex> s_lock(subscription.mutex);
