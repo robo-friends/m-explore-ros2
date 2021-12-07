@@ -113,11 +113,6 @@ private:
 public:
   MapMerge();
 
-  void spin();
-  void executetopicSubscribing();
-  void executemapMerging();
-  void executeposeEstimation();
-
   void topicSubscribing();
   void mapMerging();
   /**

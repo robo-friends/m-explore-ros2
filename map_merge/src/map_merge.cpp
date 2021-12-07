@@ -42,41 +42,6 @@
 #include <rcpputils/asserts.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-nav_msgs::msg::OccupancyGrid::ConstSharedPtr padMapToWidthHeight(nav_msgs::msg::OccupancyGrid::ConstSharedPtr map, unsigned int width, unsigned int height)
-{
-  if (map->info.width == width && map->info.height == height) {
-    return map;
-  }
-
-  nav_msgs::msg::OccupancyGrid::SharedPtr padded_map;
-  nav_msgs::msg::OccupancyGrid::ConstSharedPtr padded_map_const;
-  padded_map->header = map->header;
-  padded_map->info = map->info;
-  padded_map->info.width = width;
-  padded_map->info.height = height;
-  padded_map->data.resize(width * height);
-
-  // copy data
-  for (unsigned int y = 0; y < map->info.height; ++y) {
-    for (unsigned int x = 0; x < map->info.width; ++x) {
-      padded_map->data[y * width + x] = map->data[y * map->info.width + x];
-    }
-  }
-
-  // fill in the rest with unknown
-  for (unsigned int y = 0; y < height; ++y) {
-    for (unsigned int x = 0; x < width; ++x) {
-      if (x < map->info.width && y < map->info.height) {
-        continue;
-      }
-      padded_map->data[y * width + x] = -1;
-    }
-  }
-
-  // map = padded_map;
-  padded_map_const = padded_map;
-  return padded_map_const;
-}
 
 namespace map_merge
 {
@@ -161,10 +126,6 @@ void MapMerge::topicSubscribing()
   std::string map_topic;
   std::string map_updates_topic;
 
-  // ROS1 comment: default msg constructor does no properly initialize quaternion
-  // I think in ROS2 it DOES initialize properly
-  // init_pose.rotation.w = 1;  // create identity quaternion
-
   // ros::master::getTopics(topic_infos);
   std::map<std::string, std::vector<std::string>> topic_infos = this->get_topic_names_and_types();
 
@@ -242,16 +203,6 @@ void MapMerge::mapMerging()
 
   if (have_initial_poses_) {
     // TODO: attempt fix for SLAM toolbox: add method for padding grids to same size
-    unsigned int max_width = 0;
-    unsigned int max_height = 0;
-    for (auto& subscription : subscriptions_) {
-      if (subscription.readonly_map->info.width > max_width) {
-        max_width = subscription.readonly_map->info.width;
-      }
-      if (subscription.readonly_map->info.height > max_height) {
-        max_height = subscription.readonly_map->info.height;
-      }
-    }
 
     std::vector<nav_msgs::msg::OccupancyGrid::ConstSharedPtr> grids;
     std::vector<geometry_msgs::msg::Transform> transforms;
@@ -261,13 +212,6 @@ void MapMerge::mapMerging()
       // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
       for (auto& subscription : subscriptions_) {
         // std::lock_guard<std::mutex> s_lock(subscription.mutex);
-
-        // Now pad the grids to the max size using padMapToHeightWidth
-        // for (auto& grid : grids) {
-        //   padMapToWidthHeight(grid, max_width, max_height);
-        // }
-        // auto padded_grid = padMapToWidthHeight(subscription.readonly_map, max_width, max_height);
-        // grids.push_back(padded_grid);
 
         grids.push_back(subscription.readonly_map);
         transforms.push_back(subscription.initial_pose);
@@ -307,7 +251,6 @@ void MapMerge::poseEstimation()
 {
   RCLCPP_DEBUG(logger_, "Grid pose estimation started.");
   RCLCPP_INFO_ONCE(logger_, "Grid pose estimation started.");
-  // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
   std::vector<nav_msgs::msg::OccupancyGrid::ConstSharedPtr> grids;
   grids.reserve(subscriptions_size_);
 
@@ -322,7 +265,6 @@ void MapMerge::poseEstimation()
 
   // Print grids size
   // RCLCPP_INFO(logger_, "Grids size: %d", grids.size());
-
 
   std::lock_guard<std::mutex> lock(pipeline_mutex_);
   pipeline_.feed(grids.begin(), grids.end());
@@ -346,8 +288,6 @@ void MapMerge::fullMapUpdate(const nav_msgs::msg::OccupancyGrid::SharedPtr msg,
   RCLCPP_DEBUG(logger_, "received full map update");
   // RCLCPP_INFO(logger_, "received full map update");
   std::lock_guard<std::mutex> lock(subscription.mutex);
-  // if (subscription.readonly_map &&
-  //     subscription.readonly_map->header.stamp > msg->header.stamp) {
   if (subscription.readonly_map){
     // ros2 header .stamp don't support > operator, we need to create them explicitly
     auto t1 = rclcpp::Time(subscription.readonly_map->header.stamp);
@@ -381,8 +321,6 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
   size_t xn = msg->width + x0;
   size_t yn = msg->height + y0;
 
-  // nav_msgs::OccupancyGridPtr map;
-  // nav_msgs::OccupancyGridConstPtr readonly_map;  // local copy
   nav_msgs::msg::OccupancyGrid::SharedPtr map;
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr readonly_map;  // local copy
   {
@@ -429,11 +367,6 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
   {
     // store back updated map
     std::lock_guard<std::mutex> lock(subscription.mutex);
-    // if (subscription.readonly_map &&
-    //     subscription.readonly_map->header.stamp > map->header.stamp) {
-    //   // we have been overrunned by faster update. our work was useless.
-    //   return;
-    // }
     if (subscription.readonly_map){
       // ros2 header .stamp don't support > operator, we need to create them explicitly
       auto t1 = rclcpp::Time(subscription.readonly_map->header.stamp);
@@ -499,55 +432,6 @@ bool MapMerge::getInitPose(const std::string& name,
 
   return success;
 }
-
-/*
- * execute()
- */
-void MapMerge::executemapMerging()
-{
-  // ros::Rate r(merging_rate_);
-  // while (node_.ok()) {
-  //   mapMerging();
-  //   r.sleep();
-  // }
-}
-
-void MapMerge::executetopicSubscribing()
-{
-  // ros::Rate r(discovery_rate_);
-  // while (node_.ok()) {
-  //   topicSubscribing();
-  //   r.sleep();
-  // }
-}
-
-void MapMerge::executeposeEstimation()
-{
-  // if (have_initial_poses_)
-  //   return;
-
-  // ros::Rate r(estimation_rate_);
-  // while (node_.ok()) {
-  //   poseEstimation();
-  //   r.sleep();
-  // }
-}
-
-/*
- * spin()
- */
-void MapMerge::spin()
-{
-  // ros::spinOnce();
-  // std::thread merging_thr([this]() { executemapMerging(); });
-  // std::thread subscribing_thr([this]() { executetopicSubscribing(); });
-  // std::thread estimation_thr([this]() { executeposeEstimation(); });
-  // ros::spin();
-  // estimation_thr.join();
-  // merging_thr.join();
-  // subscribing_thr.join();
-}
-
 }  // namespace map_merge
 
 int main(int argc, char** argv)
@@ -559,8 +443,6 @@ int main(int argc, char** argv)
   //                                    ros::console::levels::Debug)) {
   //   ros::console::notifyLoggerLevelsChanged();
   // }
-  // map_merge::MapMerge map_merging;
-  // map_merging.spin();
   
   // ROS2 code
   auto node = std::make_shared<map_merge::MapMerge>();

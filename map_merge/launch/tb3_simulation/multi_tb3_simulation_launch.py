@@ -24,7 +24,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 
-from launch import LaunchDescription
+from launch import LaunchDescription, condition
 from launch.actions import (
     DeclareLaunchArgument,
     ExecuteProcess,
@@ -32,7 +32,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     LogInfo,
 )
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, TextSubstitution
 
@@ -47,12 +47,12 @@ def generate_launch_description():
     launch_dir_map_merge = os.path.join(map_merge_dir, "launch", "tb3_simulation")
 
     # Names and poses of the robots for known poses demo
-    robots = [
+    robots_known_poses = [
         {"name": "robot1", "x_pose": 0.0, "y_pose": 0.5, "z_pose": 0.01},
         {"name": "robot2", "x_pose": -3.0, "y_pose": 1.5, "z_pose": 0.01},
     ]
     # Names and poses of the robots for unknown poses demo, the must be very close at beggining
-    robots = [
+    robots_unknown_poses = [
         {"name": "robot1", "x_pose": -2.0, "y_pose": 0.5, "z_pose": 0.01},
         {"name": "robot2", "x_pose": -3.0, "y_pose": 0.5, "z_pose": 0.01},
     ]
@@ -69,6 +69,13 @@ def generate_launch_description():
     use_robot_state_pub = LaunchConfiguration("use_robot_state_pub")
     use_rviz = LaunchConfiguration("use_rviz")
     log_settings = LaunchConfiguration("log_settings", default="true")
+
+    known_init_poses = LaunchConfiguration("known_init_poses")
+    declare_known_init_poses_cmd = DeclareLaunchArgument(
+        "known_init_poses",
+        default_value="True",
+        description="Known initial poses of the robots. If so don't forget to declare them in the params.yaml file",
+    )
 
     # Declare the launch arguments
     declare_world_cmd = DeclareLaunchArgument(
@@ -154,25 +161,41 @@ def generate_launch_description():
 
     # Define commands for spawing the robots into Gazebo
     spawn_robots_cmds = []
-    for robot in robots:
+    for robot_known, robot_unknown in zip(robots_known_poses, robots_unknown_poses):
         spawn_robots_cmds.append(
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     os.path.join(bringup_dir, "launch", "spawn_tb3_launch.py")
                 ),
                 launch_arguments={
-                    "x_pose": TextSubstitution(text=str(robot["x_pose"])),
-                    "y_pose": TextSubstitution(text=str(robot["y_pose"])),
-                    "z_pose": TextSubstitution(text=str(robot["z_pose"])),
-                    "robot_name": robot["name"],
+                    "x_pose": TextSubstitution(text=str(robot_known["x_pose"])),
+                    "y_pose": TextSubstitution(text=str(robot_known["y_pose"])),
+                    "z_pose": TextSubstitution(text=str(robot_known["z_pose"])),
+                    "robot_name": robot_known["name"],
                     "turtlebot_type": TextSubstitution(text="waffle"),
                 }.items(),
+                condition=IfCondition(known_init_poses),
+            )
+        )
+        spawn_robots_cmds.append(
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(bringup_dir, "launch", "spawn_tb3_launch.py")
+                ),
+                launch_arguments={
+                    "x_pose": TextSubstitution(text=str(robot_unknown["x_pose"])),
+                    "y_pose": TextSubstitution(text=str(robot_unknown["y_pose"])),
+                    "z_pose": TextSubstitution(text=str(robot_unknown["z_pose"])),
+                    "robot_name": robot_unknown["name"],
+                    "turtlebot_type": TextSubstitution(text="waffle"),
+                }.items(),
+                condition=UnlessCondition(known_init_poses),
             )
         )
 
     # Define commands for launching the navigation instances
     nav_instances_cmds = []
-    for robot in robots:
+    for robot in robots_known_poses:
         params_file = LaunchConfiguration(f"{robot['name']}_params_file")
 
         group = GroupAction(
@@ -256,6 +279,7 @@ def generate_launch_description():
     ld.add_action(declare_use_robot_state_pub_cmd)
     ld.add_action(declare_slam_toolbox_cmd)
     ld.add_action(declare_slam_gmapping_cmd)
+    ld.add_action(declare_known_init_poses_cmd)
 
     # Add the actions to start gazebo, robots and simulations
     ld.add_action(start_gazebo_cmd)

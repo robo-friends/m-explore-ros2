@@ -55,6 +55,9 @@ export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/${ROS_DISTRO}/share/turtleb
 ```
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/${ROS_DISTRO}/share/turtlebot3_gazebo/models
 
+
+git clone https://github.com/charlielito/slam_gmapping.git --branch feature/namespace_launch
+
 Then you'll be able to run it.
 
 WIKI
