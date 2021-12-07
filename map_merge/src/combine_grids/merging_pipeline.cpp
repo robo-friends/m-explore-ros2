@@ -182,7 +182,7 @@ static inline bool isIdentity(const cv::Mat& matrix)
   return cv::countNonZero(diff) == 0;
 }
 
-nav_msgs::msg::OccupancyGrid::Ptr MergingPipeline::composeGrids()
+nav_msgs::msg::OccupancyGrid::SharedPtr MergingPipeline::composeGrids()
 {
   // for checking states. Throws a rcpputils::IllegalStateException if the condition fails.
   rcpputils::check_true(images_.size() == transforms_.size());
@@ -213,7 +213,7 @@ nav_msgs::msg::OccupancyGrid::Ptr MergingPipeline::composeGrids()
   }
 
   RCLCPP_DEBUG(logger, "compositing result grid");
-  nav_msgs::msg::OccupancyGrid::Ptr result;
+  nav_msgs::msg::OccupancyGrid::SharedPtr result;
   internal::GridCompositor compositor;
   result = compositor.compose(imgs_warped, rois);
 

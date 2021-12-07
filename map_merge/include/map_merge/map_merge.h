@@ -60,7 +60,7 @@ struct MapSubscription {
 
   geometry_msgs::msg::Transform initial_pose;
   nav_msgs::msg::OccupancyGrid::SharedPtr writable_map;
-  nav_msgs::msg::OccupancyGrid::ConstPtr readonly_map;
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr readonly_map;
 
   // ros::Subscriber map_sub;
   // ros::Subscriber map_updates_sub;

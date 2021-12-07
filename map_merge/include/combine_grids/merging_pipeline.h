@@ -67,7 +67,7 @@ public:
   bool setTransforms(InputIt transforms_begin, InputIt transforms_end);
 
 private:
-  std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids_;
+  std::vector<nav_msgs::msg::OccupancyGrid::ConstSharedPtr> grids_;
   std::vector<cv::Mat> images_;
   std::vector<cv::Mat> transforms_;
   double max_confidence_achieved_ = 0.0;
@@ -76,9 +76,9 @@ private:
 template <typename InputIt>
 void MergingPipeline::feed(InputIt grids_begin, InputIt grids_end)
 {
-  static_assert(std::is_assignable<nav_msgs::msg::OccupancyGrid::ConstPtr&,
+  static_assert(std::is_assignable<nav_msgs::msg::OccupancyGrid::ConstSharedPtr&,
                                    decltype(*grids_begin)>::value,
-                "grids_begin must point to nav_msgs::msg::OccupancyGrid::ConstPtr "
+                "grids_begin must point to nav_msgs::msg::OccupancyGrid::ConstSharedPtr "
                 "data");
 
   // we can't reserve anything, because we want to support just InputIt and

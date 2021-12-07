@@ -42,7 +42,7 @@
 #include <rcpputils/asserts.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-void padMapToWidthHeight(nav_msgs::msg::OccupancyGrid& map, int width, int height)
+void padMapToWidthHeight(nav_msgs::msg::OccupancyGrid& map, unsigned int width, unsigned int height)
 {
   if (map.info.width == width && map.info.height == height) {
     return;
@@ -56,15 +56,15 @@ void padMapToWidthHeight(nav_msgs::msg::OccupancyGrid& map, int width, int heigh
   padded_map.data.resize(width * height);
 
   // copy data
-  for (int y = 0; y < map.info.height; ++y) {
-    for (int x = 0; x < map.info.width; ++x) {
+  for (unsigned int y = 0; y < map.info.height; ++y) {
+    for (unsigned int x = 0; x < map.info.width; ++x) {
       padded_map.data[y * width + x] = map.data[y * map.info.width + x];
     }
   }
 
   // fill in the rest with unknown
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < width; ++x) {
+  for (unsigned int y = 0; y < height; ++y) {
+    for (unsigned int x = 0; x < width; ++x) {
       if (x < map.info.width && y < map.info.height) {
         continue;
       }
@@ -239,7 +239,7 @@ void MapMerge::mapMerging()
 
   if (have_initial_poses_) {
     // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
-    std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids;
+    std::vector<nav_msgs::msg::OccupancyGrid::ConstSharedPtr> grids;
     std::vector<geometry_msgs::msg::Transform> transforms;
     grids.reserve(subscriptions_size_);
     {
@@ -252,8 +252,8 @@ void MapMerge::mapMerging()
       }
     }
     // TODO: attempt fix for SLAM toolbox: add method for padding grids to same size
-    int max_width = 0;
-    int max_height = 0;
+    unsigned int max_width = 0;
+    unsigned int max_height = 0;
     for (auto& grid : grids) {
       if (grid->info.width > max_width) {
         max_width = grid->info.width;
@@ -301,7 +301,7 @@ void MapMerge::poseEstimation()
   RCLCPP_DEBUG(logger_, "Grid pose estimation started.");
   RCLCPP_INFO_ONCE(logger_, "Grid pose estimation started.");
   // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
-  std::vector<nav_msgs::msg::OccupancyGrid::ConstPtr> grids;
+  std::vector<nav_msgs::msg::OccupancyGrid::ConstSharedPtr> grids;
   grids.reserve(subscriptions_size_);
 
   {
@@ -377,7 +377,7 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
   // nav_msgs::OccupancyGridPtr map;
   // nav_msgs::OccupancyGridConstPtr readonly_map;  // local copy
   nav_msgs::msg::OccupancyGrid::SharedPtr map;
-  nav_msgs::msg::OccupancyGrid::ConstPtr readonly_map;  // local copy
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr readonly_map;  // local copy
   {
     // load maps
     std::lock_guard<std::mutex> lock(subscription.mutex);
