@@ -109,6 +109,7 @@ private:
                      MapSubscription& map);
   void partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg,
                         MapSubscription& map);
+  void getMaxWidthHeightMaps(unsigned int& max_width, unsigned int& max_height);
 
 public:
   MapMerge();

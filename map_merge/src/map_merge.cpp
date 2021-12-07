@@ -42,19 +42,23 @@
 #include <rcpputils/asserts.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-nav_msgs::msg::OccupancyGrid::ConstSharedPtr padMapToWidthHeight(nav_msgs::msg::OccupancyGrid::ConstSharedPtr map, unsigned int width, unsigned int height)
+nav_msgs::msg::OccupancyGrid::ConstSharedPtr pad_map(nav_msgs::msg::OccupancyGrid::ConstSharedPtr map, 
+                                                      unsigned int width, unsigned int height)
 {
   if (map->info.width == width && map->info.height == height) {
     return map;
   }
 
-  nav_msgs::msg::OccupancyGrid::SharedPtr padded_map;
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr padded_map_const;
+  nav_msgs::msg::OccupancyGrid::SharedPtr padded_map;
+  // auto padded_map = std::make_shared<nav_msgs::msg::OccupancyGrid>(map)
+  std::cout << "1. Padding map to " << width << "x" << height << std::endl;
   padded_map->header = map->header;
   padded_map->info = map->info;
   padded_map->info.width = width;
   padded_map->info.height = height;
   padded_map->data.resize(width * height);
+  std::cout << "2. Padding map to " << width << "x" << height << std::endl;
 
   // copy data
   for (unsigned int y = 0; y < map->info.height; ++y) {
@@ -232,6 +236,20 @@ void MapMerge::topicSubscribing()
   }
 }
 
+void MapMerge::getMaxWidthHeightMaps(unsigned int& max_width, unsigned int& max_height)
+{
+  max_width = 0;
+  max_height = 0;
+  for (auto& subscription : subscriptions_) {
+    if (subscription.readonly_map){
+      if (subscription.readonly_map->info.width > max_width) 
+        max_width = subscription.readonly_map->info.width;
+      if (subscription.readonly_map->info.height > max_height) 
+        max_height = subscription.readonly_map->info.height;
+    }
+  }
+}
+
 /*
  * mapMerging()
  */
@@ -241,17 +259,10 @@ void MapMerge::mapMerging()
   RCLCPP_INFO_ONCE(logger_, "Map merging started.");
 
   if (have_initial_poses_) {
+
     // TODO: attempt fix for SLAM toolbox: add method for padding grids to same size
-    unsigned int max_width = 0;
-    unsigned int max_height = 0;
-    for (auto& subscription : subscriptions_) {
-      if (subscription.readonly_map->info.width > max_width) {
-        max_width = subscription.readonly_map->info.width;
-      }
-      if (subscription.readonly_map->info.height > max_height) {
-        max_height = subscription.readonly_map->info.height;
-      }
-    }
+    // unsigned int max_width, max_height;
+    // getMaxWidthHeightMaps(max_width, max_height);
 
     std::vector<nav_msgs::msg::OccupancyGrid::ConstSharedPtr> grids;
     std::vector<geometry_msgs::msg::Transform> transforms;
@@ -262,12 +273,14 @@ void MapMerge::mapMerging()
       for (auto& subscription : subscriptions_) {
         // std::lock_guard<std::mutex> s_lock(subscription.mutex);
 
-        // Now pad the grids to the max size using padMapToHeightWidth
-        // for (auto& grid : grids) {
-        //   padMapToWidthHeight(grid, max_width, max_height);
+        // TODO: attempt fix for SLAM toolbox: add method for padding grids to same size
+        // Now pad the grids to the max size using pad_map
+        // if (subscription.readonly_map){
+        //   auto padded_grid = pad_map(subscription.readonly_map, max_width, max_height);
+        //   grids.push_back(padded_grid);
         // }
-        // auto padded_grid = padMapToWidthHeight(subscription.readonly_map, max_width, max_height);
-        // grids.push_back(padded_grid);
+        // else
+        //   grids.push_back(subscription.readonly_map);
 
         grids.push_back(subscription.readonly_map);
         transforms.push_back(subscription.initial_pose);
