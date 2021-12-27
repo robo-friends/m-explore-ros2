@@ -1,4 +1,4 @@
-explore_node:
+/**:
   ros__parameters:
     robot_base_frame: base_link
     costmap_topic: map

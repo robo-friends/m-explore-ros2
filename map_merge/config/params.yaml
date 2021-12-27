@@ -1,0 +1,24 @@
+map_merge:
+  ros__parameters:
+    merging_rate: 4.0
+    discovery_rate: 0.05
+    estimation_rate: 0.5
+    estimation_confidence: 0.6
+    robot_map_topic: map
+    robot_map_updates_topic: map_udpates
+    robot_namespace: ""
+    merged_map_topic: map
+    world_frame: world
+    known_init_poses: true
+    # known_init_poses: false
+
+    # Define here robots' positions in the map if known_init_poses is true
+    /robot1/map_merge/init_pose_x: 0.0
+    /robot1/map_merge/init_pose_y: 0.0
+    /robot1/map_merge/init_pose_z: 0.0
+    /robot1/map_merge/init_pose_yaw: 0.0
+
+    /robot2/map_merge/init_pose_x: -3.0
+    /robot2/map_merge/init_pose_y: 1.0
+    /robot2/map_merge/init_pose_z: 0.0
+    /robot2/map_merge/init_pose_yaw: 0.0

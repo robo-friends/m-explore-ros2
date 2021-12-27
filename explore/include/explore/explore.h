@@ -59,11 +59,11 @@
 
 using namespace std::placeholders;
 #ifdef ELOQUENT
-#define ACTION_NAME "/NavigateToPose"
+#define ACTION_NAME "NavigateToPose"
 #elif DASHING
-#define ACTION_NAME "/NavigateToPose"
+#define ACTION_NAME "NavigateToPose"
 #else
-#define ACTION_NAME "/navigate_to_pose"
+#define ACTION_NAME "navigate_to_pose"
 #endif
 namespace explore
 {

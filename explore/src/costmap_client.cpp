@@ -158,9 +158,7 @@ void Costmap2DClient::updateFullMap(
 
   // lock as we are accessing raw underlying map
   auto* mutex = costmap_.getMutex();
-
-  // TODO: fix compilation error in following line
-  // std::lock_guard<costmap_2d::Costmap2D::mutex_t> lock(*mutex);
+  std::lock_guard<nav2_costmap_2d::Costmap2D::mutex_t> lock(*mutex);
 
   // fill map with data
   unsigned char* costmap_data = costmap_.getCharMap();
@@ -194,9 +192,7 @@ void Costmap2DClient::updatePartialMap(
 
   // lock as we are accessing raw underlying map
   auto* mutex = costmap_.getMutex();
-
-  // TODO: fix compilation error in following line
-  // std::lock_guard<costmap_2d::Costmap2D::mutex_t> lock(*mutex);
+  std::lock_guard<nav2_costmap_2d::Costmap2D::mutex_t> lock(*mutex);
 
   size_t costmap_xn = costmap_.getSizeInCellsX();
   size_t costmap_yn = costmap_.getSizeInCellsY();
@@ -226,6 +222,7 @@ void Costmap2DClient::updatePartialMap(
 geometry_msgs::msg::Pose Costmap2DClient::getRobotPose() const
 {
   geometry_msgs::msg::PoseStamped robot_pose;
+  geometry_msgs::msg::Pose empty_pose;
   robot_pose.header.frame_id = robot_base_frame_;
   robot_pose.header.stamp = node_.now();
 
@@ -240,21 +237,21 @@ geometry_msgs::msg::Pose Costmap2DClient::getRobotPose() const
                           "No Transform available Error looking up robot pose: "
                           "%s\n",
                           ex.what());
-    return {};
+    return empty_pose;
   } catch (tf2::ConnectivityException& ex) {
     RCLCPP_ERROR_THROTTLE(node_.get_logger(), clk, 1000,
                           "Connectivity Error looking up robot pose: %s\n",
                           ex.what());
-    return {};
+    return empty_pose;
   } catch (tf2::ExtrapolationException& ex) {
     RCLCPP_ERROR_THROTTLE(node_.get_logger(), clk, 1000,
                           "Extrapolation Error looking up robot pose: %s\n",
                           ex.what());
-    return {};
+    return empty_pose;
   } catch (tf2::TransformException& ex) {
     RCLCPP_ERROR_THROTTLE(node_.get_logger(), clk, 1000, "Other error: %s\n",
                           ex.what());
-    return {};
+    return empty_pose;
   }
 
   return robot_pose.pose;
