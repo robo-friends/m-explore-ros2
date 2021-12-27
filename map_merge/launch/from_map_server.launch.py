@@ -43,7 +43,7 @@ def generate_launch_description():
     )
     declare_known_init_poses_argument = DeclareLaunchArgument(
         "known_init_poses",
-        default_value="True",
+        default_value="False",
         description="Known initial poses of the robots. If so don't forget to declare them in the params.yaml file",
     )
     declare_rviz_argument = DeclareLaunchArgument(

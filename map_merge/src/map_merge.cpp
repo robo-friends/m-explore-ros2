@@ -176,8 +176,9 @@ void MapMerge::topicSubscribing()
       map_updates_topic =
           ros1_names::append(robot_name, robot_map_updates_topic_);
       RCLCPP_INFO(logger_, "Subscribing to MAP topic: %s.", map_topic.c_str());
+      auto map_qos = rclcpp::QoS(rclcpp::KeepLast(50)).transient_local().reliable();
       subscription.map_sub = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-          map_topic, 50,
+          map_topic, map_qos,
           [this, &subscription](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
             fullMapUpdate(msg, subscription);
           });
@@ -185,7 +186,7 @@ void MapMerge::topicSubscribing()
               map_updates_topic.c_str());
       subscription.map_updates_sub =
           this->create_subscription<map_msgs::msg::OccupancyGridUpdate>(
-              map_updates_topic, 50,
+              map_updates_topic, map_qos,
               [this, &subscription](
                   const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg) {
                 partialMapUpdate(msg, subscription);
