@@ -100,7 +100,7 @@ Now run the merging node:
 ros2 launch multirobot_map_merge map_merge.launch.py
 ```
 
-By default the demo runs with known initial poses. You can change that by setting the `known_init_poses` parameter  to `false` in the [config file](https://github.com/robo-friends/m-explore-ros2/blob/feature/port_map_merge/map_merge/config/params.yaml#L12). Then launch again the multirobot_map_merge with the flag `known_init_poses:=False`
+By default the demo runs with known initial poses. You can change that by launching again both launch commands with with the flag `known_init_poses:=False`
 
 Then you can start moving each robot with its corresponding rviz2 interface sending nav2 goals. To see the map merged just launch rviz2:
 ```
