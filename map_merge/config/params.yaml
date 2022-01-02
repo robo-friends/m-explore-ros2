@@ -9,8 +9,8 @@ map_merge:
     robot_namespace: ""
     merged_map_topic: map
     world_frame: world
-    # known_init_poses: true
-    known_init_poses: false
+    known_init_poses: true
+    # known_init_poses: false
 
     # Define here robots' positions in the map if known_init_poses is true
     /robot1/map_merge/init_pose_x: 0.0

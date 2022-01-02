@@ -4,6 +4,7 @@
  *
  *  Copyright (c) 2014, Zhi Yan.
  *  Copyright (c) 2015-2016, Jiri Horner.
+ *  Copyright (c) 2021, Carlos Alvarez.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -165,10 +166,6 @@ void MapMerge::topicSubscribing()
   std::string map_topic;
   std::string map_updates_topic;
 
-  // ROS1 comment: default msg constructor does no properly initialize quaternion
-  // I think in ROS2 it DOES initialize properly
-  // init_pose.rotation.w = 1;  // create identity quaternion
-
   // ros::master::getTopics(topic_infos);
   std::map<std::string, std::vector<std::string>> topic_infos = this->get_topic_names_and_types();
 
@@ -218,8 +215,9 @@ void MapMerge::topicSubscribing()
       map_updates_topic =
           ros1_names::append(robot_name, robot_map_updates_topic_);
       RCLCPP_INFO(logger_, "Subscribing to MAP topic: %s.", map_topic.c_str());
+      auto map_qos = rclcpp::QoS(rclcpp::KeepLast(50)).transient_local().reliable();
       subscription.map_sub = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-          map_topic, 50,
+          map_topic, map_qos,
           [this, &subscription](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
             fullMapUpdate(msg, subscription);
           });
@@ -227,7 +225,7 @@ void MapMerge::topicSubscribing()
               map_updates_topic.c_str());
       subscription.map_updates_sub =
           this->create_subscription<map_msgs::msg::OccupancyGridUpdate>(
-              map_updates_topic, 50,
+              map_updates_topic, map_qos,
               [this, &subscription](
                   const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg) {
                 partialMapUpdate(msg, subscription);
@@ -320,7 +318,6 @@ void MapMerge::poseEstimation()
 {
   RCLCPP_DEBUG(logger_, "Grid pose estimation started.");
   RCLCPP_INFO_ONCE(logger_, "Grid pose estimation started.");
-  // std::vector<nav_msgs::OccupancyGridConstPtr> grids;
   std::vector<nav_msgs::msg::OccupancyGrid::ConstSharedPtr> grids;
   grids.reserve(subscriptions_size_);
 
@@ -335,7 +332,6 @@ void MapMerge::poseEstimation()
 
   // Print grids size
   // RCLCPP_INFO(logger_, "Grids size: %d", grids.size());
-
 
   std::lock_guard<std::mutex> lock(pipeline_mutex_);
   pipeline_.feed(grids.begin(), grids.end());
@@ -359,8 +355,6 @@ void MapMerge::fullMapUpdate(const nav_msgs::msg::OccupancyGrid::SharedPtr msg,
   RCLCPP_DEBUG(logger_, "received full map update");
   // RCLCPP_INFO(logger_, "received full map update");
   std::lock_guard<std::mutex> lock(subscription.mutex);
-  // if (subscription.readonly_map &&
-  //     subscription.readonly_map->header.stamp > msg->header.stamp) {
   if (subscription.readonly_map){
     // ros2 header .stamp don't support > operator, we need to create them explicitly
     auto t1 = rclcpp::Time(subscription.readonly_map->header.stamp);
@@ -394,8 +388,6 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
   size_t xn = msg->width + x0;
   size_t yn = msg->height + y0;
 
-  // nav_msgs::OccupancyGridPtr map;
-  // nav_msgs::OccupancyGridConstPtr readonly_map;  // local copy
   nav_msgs::msg::OccupancyGrid::SharedPtr map;
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr readonly_map;  // local copy
   {
@@ -442,11 +434,6 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
   {
     // store back updated map
     std::lock_guard<std::mutex> lock(subscription.mutex);
-    // if (subscription.readonly_map &&
-    //     subscription.readonly_map->header.stamp > map->header.stamp) {
-    //   // we have been overrunned by faster update. our work was useless.
-    //   return;
-    // }
     if (subscription.readonly_map){
       // ros2 header .stamp don't support > operator, we need to create them explicitly
       auto t1 = rclcpp::Time(subscription.readonly_map->header.stamp);
@@ -512,55 +499,6 @@ bool MapMerge::getInitPose(const std::string& name,
 
   return success;
 }
-
-/*
- * execute()
- */
-void MapMerge::executemapMerging()
-{
-  // ros::Rate r(merging_rate_);
-  // while (node_.ok()) {
-  //   mapMerging();
-  //   r.sleep();
-  // }
-}
-
-void MapMerge::executetopicSubscribing()
-{
-  // ros::Rate r(discovery_rate_);
-  // while (node_.ok()) {
-  //   topicSubscribing();
-  //   r.sleep();
-  // }
-}
-
-void MapMerge::executeposeEstimation()
-{
-  // if (have_initial_poses_)
-  //   return;
-
-  // ros::Rate r(estimation_rate_);
-  // while (node_.ok()) {
-  //   poseEstimation();
-  //   r.sleep();
-  // }
-}
-
-/*
- * spin()
- */
-void MapMerge::spin()
-{
-  // ros::spinOnce();
-  // std::thread merging_thr([this]() { executemapMerging(); });
-  // std::thread subscribing_thr([this]() { executetopicSubscribing(); });
-  // std::thread estimation_thr([this]() { executeposeEstimation(); });
-  // ros::spin();
-  // estimation_thr.join();
-  // merging_thr.join();
-  // subscribing_thr.join();
-}
-
 }  // namespace map_merge
 
 int main(int argc, char** argv)
@@ -572,8 +510,6 @@ int main(int argc, char** argv)
   //                                    ros::console::levels::Debug)) {
   //   ros::console::notifyLoggerLevelsChanged();
   // }
-  // map_merge::MapMerge map_merging;
-  // map_merging.spin();
   
   // ROS2 code
   auto node = std::make_shared<map_merge::MapMerge>();
