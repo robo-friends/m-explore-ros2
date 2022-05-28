@@ -1,8 +1,12 @@
 # m-explore ROS2 port
 
-ROS2 package port for multi robot exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Eloquent, Dashing, Foxy, and Galactic distros.
+ROS2 package port for multi robot autonomous exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Eloquent, Dashing, Foxy, and Galactic distros.
 
-## Autonomous exploration
+### Contents
+1. [Autonomous exploration](#Autonomous-exploration)
+1. [Multirobot map merge](#Multirobot-map-merge)
+
+## Autonomous exploration<a name="Autonomous-exploration"/> 
 
 ### TB3
 https://user-images.githubusercontent.com/8033598/128805356-be90a880-16c6-4fc9-8f54-e3302873dc8c.mp4
@@ -61,7 +65,7 @@ export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/${ROS_DISTRO}/share/turtleb
 
 Then you'll be able to run it.
 
-## Multirobot map merge
+## Multirobot map merge<a name="Multirobot map merge"/> 
 
 This package works with known and unknown initial poses of the robots. It merges the maps of the robots and publishes the merged map. Some results in simulation:
 
