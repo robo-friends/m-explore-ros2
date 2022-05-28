@@ -8,6 +8,9 @@ ROS2 package port for multi robot autonomous exploration of [m-explore](https://
     * [Demo with a JetBot](#jetbot-demo)
     * [Instructions for the simulation demo](#running-explore-demo-sim)    
 2. [Multirobot map merge](#Multirobot-map-merge)
+    * [Simulation demo with known initial poses](#Known-initial-poses-(best-results))
+    * [Simulation demo with unknown initial poses](#Unknown-initial-poses)
+    * [Instructions for simulation demos](#running-merge-demo-sim)
 
 ## Autonomous exploration<a name="Autonomous-exploration"/> 
 
@@ -68,7 +71,7 @@ export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/${ROS_DISTRO}/share/turtleb
 
 Then you'll be able to run it.
 
-## Multirobot map merge<a name="Multirobot map merge"/> 
+## Multirobot map merge 
 
 This package works with known and unknown initial poses of the robots. It merges the maps of the robots and publishes the merged map. Some results in simulation:
 
@@ -98,7 +101,7 @@ To spawn multiple robots, you need the `nav2_gazebo_spawner` which does not come
 #### Nav2 config files
 This repo has some config examples and launch files for running this package with 2 TB3 robots and a world with nav2. Nonetheless, they are only compatible with the galactic branch and since some breaking changes were introduced in this branch, if you want to try it with another ros2 distro you'll need to tweak those param files for that nav2's distro version (which shouldn't be hard).
 
-### Running the demo with TB3
+### Running the demo with TB3<a name="running-merge-demo-sim"/> 
 First, you'll need to launch the whole simulation stack, nav2 stacks and slam stacks per robot. For that just launch::
 ```
 export TURTLEBOT3_MODEL=waffle
