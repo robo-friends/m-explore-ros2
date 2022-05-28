@@ -1,10 +1,21 @@
 # m-explore ROS2 port
 
-ROS2 package port for multi robot exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Eloquent, Dashing, Foxy, and Galactic distros.
+ROS2 package port for multi robot autonomous exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Eloquent, Dashing, Foxy, and Galactic distros.
+
+### Contents
+1. [Autonomous exploration](#Autonomous-exploration)
+    * [Demo in simulation with a TB3 robot](#Simulation-with-a-TB3-robot)    
+    * [Demo with a JetBot](#On-a-JetBot-with-realsense-cameras)
+    * [Instructions for the simulation demo](#Running-the-explore-demo-with-TB3)    
+2. [Multirobot map merge](#Multirobot-map-merge)
+    * [Simulation demo with known initial poses](#Known-initial-poses)
+    * [Simulation demo with unknown initial poses](#Unknown-initial-poses)
+    * [ROS2 requeriments](#ROS2-requirements)
+    * [Instructions for simulation demos](#Running-the-demo-with-TB3)
 
 ## Autonomous exploration
 
-### TB3
+### Simulation with a TB3 robot
 https://user-images.githubusercontent.com/8033598/128805356-be90a880-16c6-4fc9-8f54-e3302873dc8c.mp4
 
 
@@ -30,7 +41,7 @@ To run with a params file just run it with
 ros2 run explore_lite explore --ros-args --params-file <path_to_ros_ws>/m-explore/explore/config/params.yaml
 ```
 
-### Running the demo with TB3
+### Running the explore demo with TB3
 Install nav2 and tb3 simulation. You can follow the [tutorial](https://navigation.ros.org/getting_started/index.html#installation).
 
 Then just run the nav2 stack with slam:
@@ -61,11 +72,14 @@ export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/${ROS_DISTRO}/share/turtleb
 
 Then you'll be able to run it.
 
+______________________________________________________________________
 ## Multirobot map merge
 
 This package works with known and unknown initial poses of the robots. It merges the maps of the robots and publishes the merged map. Some results in simulation:
 
-### Known initial poses (best results)
+### Known initial poses
+
+This gives normally the best results.
 https://user-images.githubusercontent.com/8033598/144522712-c31fb4bb-bb5a-4859-b3e1-8ad665f80696.mp4
 
 ### Unknown initial poses 
