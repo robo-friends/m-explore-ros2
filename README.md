@@ -8,8 +8,9 @@ ROS2 package port for multi robot autonomous exploration of [m-explore](https://
     * [Demo with a JetBot](#jetbot-demo)
     * [Instructions for the simulation demo](#running-explore-demo-sim)    
 2. [Multirobot map merge](#Multirobot-map-merge)
-    * [Simulation demo with known initial poses](#Known-initial-poses-(best-results))
+    * [Simulation demo with known initial poses](#Known-initial-poses)
     * [Simulation demo with unknown initial poses](#Unknown-initial-poses)
+    * [ROS2 requeriments](#ROS2-requirements)
     * [Instructions for simulation demos](#running-merge-demo-sim)
 
 ## Autonomous exploration<a name="Autonomous-exploration"/> 
@@ -75,7 +76,7 @@ Then you'll be able to run it.
 
 This package works with known and unknown initial poses of the robots. It merges the maps of the robots and publishes the merged map. Some results in simulation:
 
-### Known initial poses (best results)
+### Known initial poses (best results)<a name="Known-initial-poses"/> 
 https://user-images.githubusercontent.com/8033598/144522712-c31fb4bb-bb5a-4859-b3e1-8ad665f80696.mp4
 
 ### Unknown initial poses 
