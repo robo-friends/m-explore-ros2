@@ -80,6 +80,7 @@ This package works with known and unknown initial poses of the robots. It merges
 ### Known initial poses
 
 This gives normally the best results.
+
 https://user-images.githubusercontent.com/8033598/144522712-c31fb4bb-bb5a-4859-b3e1-8ad665f80696.mp4
 
 ### Unknown initial poses 
