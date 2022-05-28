@@ -4,22 +4,22 @@ ROS2 package port for multi robot autonomous exploration of [m-explore](https://
 
 ### Contents
 1. [Autonomous exploration](#Autonomous-exploration)
-    * [Demo in simulation with a TB3 robot](#TB3)    
-    * [Demo with a JetBot](#jetbot-demo)
-    * [Instructions for the simulation demo](#running-explore-demo-sim)    
+    * [Demo in simulation with a TB3 robot](#Simulation-with-a-TB3-robot)    
+    * [Demo with a JetBot](#On-a-JetBot-with-realsense-cameras)
+    * [Instructions for the simulation demo](#Running-the-explore-demo-with-TB3)    
 2. [Multirobot map merge](#Multirobot-map-merge)
     * [Simulation demo with known initial poses](#Known-initial-poses)
     * [Simulation demo with unknown initial poses](#Unknown-initial-poses)
     * [ROS2 requeriments](#ROS2-requirements)
-    * [Instructions for simulation demos](#running-merge-demo-sim)
+    * [Instructions for simulation demos](#Running-the-demo-with-TB3)
 
-## Autonomous exploration<a name="Autonomous-exploration"/> 
+## Autonomous exploration
 
-### TB3
+### Simulation with a TB3 robot
 https://user-images.githubusercontent.com/8033598/128805356-be90a880-16c6-4fc9-8f54-e3302873dc8c.mp4
 
 
-### On a JetBot with realsense cameras<a name="jetbot-demo"/> 
+### On a JetBot with realsense cameras
 https://user-images.githubusercontent.com/18732666/128493567-6841dde0-2250-4d81-9bcb-8b216e0fb34d.mp4
 
 
@@ -41,7 +41,7 @@ To run with a params file just run it with
 ros2 run explore_lite explore --ros-args --params-file <path_to_ros_ws>/m-explore/explore/config/params.yaml
 ```
 
-### Running the demo with TB3<a name="running-explore-demo-sim"/> 
+### Running the explore demo with TB3
 Install nav2 and tb3 simulation. You can follow the [tutorial](https://navigation.ros.org/getting_started/index.html#installation).
 
 Then just run the nav2 stack with slam:
@@ -72,11 +72,15 @@ export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/${ROS_DISTRO}/share/turtleb
 
 Then you'll be able to run it.
 
-## Multirobot map merge 
+______________________________________________________________________
+## Multirobot map merge
 
 This package works with known and unknown initial poses of the robots. It merges the maps of the robots and publishes the merged map. Some results in simulation:
 
-### Known initial poses (best results)<a name="Known-initial-poses"/> 
+### Known initial poses
+
+This gives normally the best results.
+
 https://user-images.githubusercontent.com/8033598/144522712-c31fb4bb-bb5a-4859-b3e1-8ad665f80696.mp4
 
 ### Unknown initial poses 
@@ -102,7 +106,7 @@ To spawn multiple robots, you need the `nav2_gazebo_spawner` which does not come
 #### Nav2 config files
 This repo has some config examples and launch files for running this package with 2 TB3 robots and a world with nav2. Nonetheless, they are only compatible with the galactic branch and since some breaking changes were introduced in this branch, if you want to try it with another ros2 distro you'll need to tweak those param files for that nav2's distro version (which shouldn't be hard).
 
-### Running the demo with TB3<a name="running-merge-demo-sim"/> 
+### Running the demo with TB3
 First, you'll need to launch the whole simulation stack, nav2 stacks and slam stacks per robot. For that just launch::
 ```
 export TURTLEBOT3_MODEL=waffle
