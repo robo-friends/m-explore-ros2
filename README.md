@@ -4,7 +4,10 @@ ROS2 package port for multi robot autonomous exploration of [m-explore](https://
 
 ### Contents
 1. [Autonomous exploration](#Autonomous-exploration)
-1. [Multirobot map merge](#Multirobot-map-merge)
+    * [Demo in simulation with a TB3 robot](#TB3)    
+    * [Demo with a JetBot](#jetbot-demo)
+    * [Instructions for the simulation demo](#running-explore-demo-sim)    
+2. [Multirobot map merge](#Multirobot-map-merge)
 
 ## Autonomous exploration<a name="Autonomous-exploration"/> 
 
@@ -12,7 +15,7 @@ ROS2 package port for multi robot autonomous exploration of [m-explore](https://
 https://user-images.githubusercontent.com/8033598/128805356-be90a880-16c6-4fc9-8f54-e3302873dc8c.mp4
 
 
-### On a JetBot with realsense cameras
+### On a JetBot with realsense cameras<a name="jetbot-demo"/> 
 https://user-images.githubusercontent.com/18732666/128493567-6841dde0-2250-4d81-9bcb-8b216e0fb34d.mp4
 
 
@@ -34,7 +37,7 @@ To run with a params file just run it with
 ros2 run explore_lite explore --ros-args --params-file <path_to_ros_ws>/m-explore/explore/config/params.yaml
 ```
 
-### Running the demo with TB3
+### Running the demo with TB3<a name="running-explore-demo-sim"/> 
 Install nav2 and tb3 simulation. You can follow the [tutorial](https://navigation.ros.org/getting_started/index.html#installation).
 
 Then just run the nav2 stack with slam:
