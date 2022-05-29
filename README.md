@@ -1,6 +1,6 @@
 # m-explore ROS2 port
 
-ROS2 package port for multi robot autonomous exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Eloquent, Dashing, Foxy, and Galactic distros.
+ROS2 package port for multi-robot autonomous exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Eloquent, Dashing, Foxy, and Galactic distros.
 
 ### Contents
 1. [Autonomous exploration](#Autonomous-exploration)
@@ -10,7 +10,7 @@ ROS2 package port for multi robot autonomous exploration of [m-explore](https://
 2. [Multirobot map merge](#Multirobot-map-merge)
     * [Simulation demo with known initial poses](#Known-initial-poses)
     * [Simulation demo with unknown initial poses](#Unknown-initial-poses)
-    * [ROS2 requeriments](#ROS2-requirements)
+    * [ROS2 requirements](#ROS2-requirements)
     * [Instructions for simulation demos](#Running-the-demo-with-TB3)
 
 ## Autonomous exploration
@@ -75,13 +75,18 @@ Then you'll be able to run it.
 ______________________________________________________________________
 ## Multirobot map merge
 
-This package works with known and unknown initial poses of the robots. It merges the maps of the robots and publishes the merged map. Some results in simulation:
+This package works with known and unknown initial poses of the robots. It merges the maps of the robots and publishes the merged map. Some results in simulation are shown below.
 
 ### Known initial poses
 
-This gives normally the best results.
+This modality gives normally the best results. The original ROS1 code only supports [slam_gmapping](https://github.com/ros-perception/slam_gmapping) type of maps for the merge. The following shows the result with that.
 
 https://user-images.githubusercontent.com/8033598/144522712-c31fb4bb-bb5a-4859-b3e1-8ad665f80696.mp4
+
+We also support using [slam_toolbox](https://github.com/SteveMacenski/slam_toolbox) in a yet [experimental branch](https://github.com/robo-friends/m-explore-ros2/tree/feature/slam_toolbox_compat). The following demo shows the map merging using the currently supported and most used ROS2-SLAM library.
+
+https://user-images.githubusercontent.com/8033598/170846935-cfae9f3f-5edd-43ea-b993-7b3ba1db921b.mp4
+
 
 ### Unknown initial poses 
 It works better if the robots start very close (< 3 meters) to each other so their relative positions can be calculated properly.
@@ -91,7 +96,7 @@ https://user-images.githubusercontent.com/8033598/144522696-517d54fd-74d0-4c55-9
 ### ROS2 requirements
 
 #### SLAM
-Because of the logic that merges the maps, currently as a straightforward port to ROS2 from the ROS1 version, the SLAM needs to be done using the ROS1 defacto slam option which is [slam_gmapping](https://github.com/ros-perception/slam_gmapping), which hasn't been ported officially to ROS2 yet. There is an unofficial port but it lacks to pass a namespace to its launch file. For that, this repo was tested with one of the authors of this package [fork](https://github.com/charlielito/slam_gmapping/tree/feature/namespace_launch). You'll need to git clone to your workspace and build it with colcon.
+Because of the logic that merges the maps, currently as a straightforward port to ROS2 from the ROS1 version, the SLAM needs to be done using the ROS1 defacto slam option which is [slam_gmapping](https://github.com/ros-perception/slam_gmapping), which hasn't been ported officially to ROS2 yet. There is an unofficial port but it lacks to pass a namespace to its launch file. For that, this repo was tested with one of the authors of this package's [fork](https://github.com/charlielito/slam_gmapping/tree/feature/namespace_launch). You'll need to git clone to your workspace and build it with colcon.
 
 
 ```
@@ -100,6 +105,8 @@ git clone https://github.com/charlielito/slam_gmapping.git --branch feature/name
 cd ..
 colcon build --symlink-install --packages-up-to slam_gmapping
 ```
+
+**Note**: You could use [slam_toolbox](https://github.com/SteveMacenski/slam_toolbox) instead but you need to use this [experimental branch](https://github.com/robo-friends/m-explore-ros2/tree/feature/slam_toolbox_compat) which is still under development.
 
 #### Nav2 gazebo spawner
 To spawn multiple robots, you need the `nav2_gazebo_spawner` which does not come up with the `nav2-bringup` installation. For that, install it with `sudo apt install ros-${ROS_DISTRO}-nav2-gazebo-spawner`.
@@ -120,10 +127,12 @@ ros2 launch multirobot_map_merge map_merge.launch.py
 
 By default, the demo runs with known initial poses. You can change that by launching again both launch commands with the flag `known_init_poses:=False`
 
-Then you can start moving each robot with its corresponding rviz2 interface sending nav2 goals. To see the map merged just launch rviz2:
+Then you can start moving each robot with its corresponding rviz2 interface by sending nav2 goals. To see the map merged just launch rviz2:
 ```
 rviz2 -d <your/ros2_ws>/src/m-explore-ros2/map_merge/launch/map_merge.rviz
 ```
+
+**Note**: If you want to use slam_toolbox, launch `multirobot_map_merge` with the following flag instead: `slam_toolbox:=True`. Remember to use the experimental branch mentioned above.
 
 WIKI
 ----
