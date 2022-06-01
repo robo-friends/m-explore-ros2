@@ -52,12 +52,14 @@ nav_msgs::msg::OccupancyGrid::ConstSharedPtr pad_map(nav_msgs::msg::OccupancyGri
 
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr padded_map_const;
   nav_msgs::msg::OccupancyGrid::SharedPtr padded_map;
-  // auto padded_map = std::make_shared<nav_msgs::msg::OccupancyGrid>(map)
+  padded_map.reset(new nav_msgs::msg::OccupancyGrid(*map));
   std::cout << "1. Padding map to " << width << "x" << height << std::endl;
-  padded_map->header = map->header;
-  padded_map->info = map->info;
   padded_map->info.width = width;
   padded_map->info.height = height;
+  // padded_map->info.origin.position.x =  -10.0;
+  // padded_map->info.origin.position.y = -10.0;
+  // padded_map->info.origin.position.z = 0.0;
+  // padded_map->info.origin.orientation.w = 0.0;
   padded_map->data.resize(width * height);
   std::cout << "2. Padding map to " << width << "x" << height << std::endl;
 
@@ -79,6 +81,91 @@ nav_msgs::msg::OccupancyGrid::ConstSharedPtr pad_map(nav_msgs::msg::OccupancyGri
   }
 
   // map = padded_map;
+  padded_map_const = padded_map;
+  return padded_map_const;
+}
+
+nav_msgs::msg::OccupancyGrid::ConstSharedPtr pad_map2(nav_msgs::msg::OccupancyGrid::ConstSharedPtr map, 
+                                                      unsigned int width, unsigned int height)
+{
+  if (map->info.width == width && map->info.height == height) {
+    return map;
+  }
+
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr padded_map_const;
+  nav_msgs::msg::OccupancyGrid::SharedPtr padded_map = std::make_shared<nav_msgs::msg::OccupancyGrid>();
+  std::cout << "1. Padding map to " << width << "x" << height << std::endl;
+  padded_map->info = map->info;
+  padded_map->header = map->header;
+  padded_map->info.width = width;
+  padded_map->info.height = height;
+  padded_map->info.origin.position.x =  -10.0;
+  padded_map->info.origin.position.y = -10.0;
+  padded_map->info.origin.position.z = 0.0;
+  padded_map->info.origin.orientation.w = 0.0;
+  std::cout << "2. Padding map to " << width << "x" << height << std::endl;
+  // Determine how much space to fill in with unknown cells between bottom of the new sized map and the original slam map
+  const size_t bottom0_width_ = (map->info.origin.position.x - padded_map->info.origin.position.x) / padded_map->info.resolution;
+  const size_t bottom0_height_ = (map->info.origin.position.y - padded_map->info.origin.position.y) / padded_map->info.resolution;
+  std::cout << "3. bottom width " << bottom0_width_ << " bottom height " << bottom0_height_ << std::endl;
+  // const size_t bottom0_width_ = 0;
+  // const size_t bottom0_height_ = 0;
+
+  // Map starts loading in from origin, which is the bottom right corner (for the default orientation in rviz)
+  // From the origin, the row components corresponds with width (+ x-dir which is up and + y-dir is to the left)
+  // Fill in the all new cells in the new map with unknowns (-1)
+  int c0 = 0; // start a counter for map0
+
+  // Fill in the space between start of the new map to the start of the local SLAM map with -1s
+  // (for the default orientation in Rviz, this is the space to the right of the SLAM map)
+  std::cout << "4. hi" << std::endl;
+  for (int i=0;  i < padded_map->info.width * bottom0_height_; i++)
+  {
+    padded_map->data.push_back(-1);
+  }
+
+  std::cout << "5. hi" << std::endl;
+  // Fill in the spaces on either side of the local SLAM map with -1s, but dont replace the current values from the local SLAM map
+  for (int item_counter=0; item_counter < map->info.height; item_counter++)
+  {
+    // print item_counter
+    // std::cout << "item_counter " << item_counter << std::endl;
+    // For all new cells between the new starting width and the original SLAM starting width, fill with -1s
+    // (for the default orientation in Rviz, this is the space below the SLAM map)
+    for (int q=0; q < bottom0_width_; q++)
+    {
+      // std::cout << "q " << q << std::endl;
+      padded_map->data.push_back(-1);
+    }
+
+    // Fill in the current SLAM map information, in its initial location
+    for (int a = 0; a < map->info.width; a++)
+    {
+      // std::cout << "a " << a << std::endl;
+      padded_map->data.push_back(map->data[c0]);
+      c0++;
+    }
+
+    std::cout << "up to: " << (padded_map->info.width - map->info.width - bottom0_width_) << std::endl;
+    // width = 186, 132 bottom_width=133
+    // For all new cells between the new ending width and the original SLAM end width, fill with -1s
+    // (for the default orientation in Rviz, this is the space above the SLAM map)
+    for (int u=0; u < (padded_map->info.width - map->info.width - bottom0_width_); u++)
+    {
+      // std::cout << "u " << u << std::endl;
+      padded_map->data.push_back(-1);
+    }
+  } 
+
+  std::cout << "6. hi" << std::endl;
+
+  // Fill in the space between the end of the original SLAM map to the end of the new map with -1s
+  // (for the default orientation in Rviz, this is the space to the left of the SLAM map)
+  for (int z=0;  z < ((height - map->info.height - bottom0_height_) * padded_map->info.width); z++)
+  {
+    padded_map->data.push_back(-1);
+  }
+
   padded_map_const = padded_map;
   return padded_map_const;
 }
@@ -230,6 +317,12 @@ void MapMerge::topicSubscribing()
                   const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg) {
                 partialMapUpdate(msg, subscription);
               });
+
+      // Debug for padding of maps
+      auto pub =
+      this->create_publisher<nav_msgs::msg::OccupancyGrid>(ros1_names::append(robot_name, "padded_map"), 
+      rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
+      pad_publishers_.push_back(pub);
     }
   }
 }
@@ -259,8 +352,9 @@ void MapMerge::mapMerging()
   if (have_initial_poses_) {
 
     // TODO: attempt fix for SLAM toolbox: add method for padding grids to same size
-    // unsigned int max_width, max_height;
-    // getMaxWidthHeightMaps(max_width, max_height);
+    unsigned int max_width, max_height;
+    // max_height = max_width = 200;
+    getMaxWidthHeightMaps(max_width, max_height);
 
     std::vector<nav_msgs::msg::OccupancyGrid::ConstSharedPtr> grids;
     std::vector<geometry_msgs::msg::Transform> transforms;
@@ -268,19 +362,25 @@ void MapMerge::mapMerging()
     {
       // We don't lock since because of ROS2 default executor only a callback can run
       // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
+      int i = 0;
       for (auto& subscription : subscriptions_) {
         // std::lock_guard<std::mutex> s_lock(subscription.mutex);
 
         // TODO: attempt fix for SLAM toolbox: add method for padding grids to same size
         // Now pad the grids to the max size using pad_map
-        // if (subscription.readonly_map){
-        //   auto padded_grid = pad_map(subscription.readonly_map, max_width, max_height);
-        //   grids.push_back(padded_grid);
-        // }
-        // else
-        //   grids.push_back(subscription.readonly_map);
+        if (subscription.readonly_map){
+          // auto padded_grid = pad_map(subscription.readonly_map, max_width, max_height);
+          // auto padded_grid = pad_map2(subscription.readonly_map, max_width, max_height);
+          // auto padded_grid = pad_map2(subscription.readonly_map, 384, 384);
+          // grids.push_back(padded_grid);
+          // pad_publishers_[i]->publish(*padded_grid);
+          // i++;
+          grids.push_back(subscription.readonly_map);
+        }
+        else
+          grids.push_back(subscription.readonly_map);
 
-        grids.push_back(subscription.readonly_map);
+        // grids.push_back(subscription.readonly_map);
         transforms.push_back(subscription.initial_pose);
       }
     }

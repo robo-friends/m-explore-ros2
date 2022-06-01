@@ -94,6 +94,8 @@ private:
   combine_grids::MergingPipeline pipeline_;
   std::mutex pipeline_mutex_;
 
+  std::vector<rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pad_publishers_;
+
   rclcpp::Logger logger_ = rclcpp::get_logger("MapMergeNode");
 
   // timers
