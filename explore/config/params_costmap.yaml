@@ -4,7 +4,7 @@ explore_node:
     costmap_topic: /global_costmap/costmap
     costmap_updates_topic: /global_costmap/costmap_updates
     visualize: true
-    planner_frequency: 0.25
+    planner_frequency: 0.15
     progress_timeout: 30.0
     potential_scale: 3.0
     orientation_scale: 0.0

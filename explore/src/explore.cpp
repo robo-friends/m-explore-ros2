@@ -69,7 +69,8 @@ Explore::Explore()
   this->get_parameter("min_frontier_size", min_frontier_size);
   progress_timeout_ = timeout;
   move_base_client_ =
-      rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(this,ACTION_NAME);
+      rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
+          this, ACTION_NAME);
 
   search_ = frontier_exploration::FrontierSearch(costmap_client_.getCostmap(),
                                                  potential_scale_, gain_scale_,
@@ -77,10 +78,16 @@ Explore::Explore()
 
   if (visualize_) {
     marker_array_publisher_ =
-        this->create_publisher<visualization_msgs::msg::MarkerArray>("frontier"
+        this->create_publisher<visualization_msgs::msg::MarkerArray>("explore/"
+                                                                     "frontier"
                                                                      "s",
                                                                      10);
   }
+
+  // Subscription to resume or stop exploration
+  resume_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
+      "explore/resume", 10,
+      std::bind(&Explore::resumeCallback, this, std::placeholders::_1));
 
   RCLCPP_INFO(logger_, "Waiting to connect to move_base nav2 server");
   move_base_client_->wait_for_action_server();
@@ -89,11 +96,22 @@ Explore::Explore()
   exploring_timer_ = this->create_wall_timer(
       std::chrono::milliseconds((uint16_t)(1000.0 / planner_frequency_)),
       [this]() { makePlan(); });
+  // Start exploration right away
+  exploring_timer_->execute_callback();
 }
 
 Explore::~Explore()
 {
   stop();
+}
+
+void Explore::resumeCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+  if (msg->data) {
+    resume();
+  } else {
+    stop();
+  }
 }
 
 void Explore::visualizeFrontiers(
@@ -132,13 +150,14 @@ void Explore::visualizeFrontiers(
   m.color.a = 255;
   // lives forever
 #ifdef ELOQUENT
-  m.lifetime = rclcpp::Duration(0); // deprecated in galactic warning
+  m.lifetime = rclcpp::Duration(0);  // deprecated in galactic warning
 #elif DASHING
-  m.lifetime = rclcpp::Duration(0); // deprecated in galactic warning
+  m.lifetime = rclcpp::Duration(0);  // deprecated in galactic warning
 #else
-  m.lifetime = rclcpp::Duration::from_seconds(0); // foxy onwards
+  m.lifetime = rclcpp::Duration::from_seconds(0);  // foxy onwards
 #endif
-  // m.lifetime = rclcpp::Duration::from_nanoseconds(0); // suggested in galactic
+  // m.lifetime = rclcpp::Duration::from_nanoseconds(0); // suggested in
+  // galactic
   m.frame_locked = true;
 
   // weighted frontiers are always sorted
@@ -199,6 +218,7 @@ void Explore::makePlan()
   }
 
   if (frontiers.empty()) {
+    RCLCPP_WARN(logger_, "No frontiers found, stopping.");
     stop();
     return;
   }
@@ -215,6 +235,7 @@ void Explore::makePlan()
                          return goalOnBlacklist(f.centroid);
                        });
   if (frontier == frontiers.end()) {
+    RCLCPP_WARN(logger_, "All frontiers traversed/tried out, stopping.");
     stop();
     return;
   }
@@ -295,13 +316,15 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
       RCLCPP_DEBUG(logger_, "Goal was aborted");
       frontier_blacklist_.push_back(frontier_goal);
       RCLCPP_DEBUG(logger_, "Adding current goal to black list");
+      // If it was aborted probably because we've found another frontier goal,
+      // so just return and don't make plan again
       return;
     case rclcpp_action::ResultCode::CANCELED:
       RCLCPP_DEBUG(logger_, "Goal was canceled");
-      return;
+      break;
     default:
       RCLCPP_WARN(logger_, "Unknown result code from move base nav2");
-      return;
+      break;
   }
   // find new goal immediately regardless of planning frequency.
   // execute via timer to prevent dead lock in move_base_client (this is
@@ -311,9 +334,9 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
   //     ros::Duration(0, 0), [this](const ros::TimerEvent&) { makePlan(); },
   //     true);
 
-  // TODO: Implement this with ros2 timers?
-  // Because of the async nature of ros2 calls I think this is not needed.
-  // makePlan();
+  // Because of the 1-thread-executor nature of ros2 I think timer is not
+  // needed.
+  makePlan();
 }
 
 void Explore::start()
@@ -323,9 +346,18 @@ void Explore::start()
 
 void Explore::stop()
 {
+  RCLCPP_INFO(logger_, "Exploration stopped.");
   move_base_client_->async_cancel_all_goals();
   exploring_timer_->cancel();
-  RCLCPP_INFO(logger_, "Exploration stopped.");
+}
+
+void Explore::resume()
+{
+  RCLCPP_INFO(logger_, "Exploration resuming.");
+  // Reactivate the timer
+  exploring_timer_->reset();
+  // Resume immediately
+  exploring_timer_->execute_callback();
 }
 
 }  // namespace explore

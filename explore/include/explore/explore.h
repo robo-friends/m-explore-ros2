@@ -49,6 +49,7 @@
 #include <memory>
 #include <mutex>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/color_rgba.hpp>
 #include <string>
 #include <vector>
@@ -80,6 +81,7 @@ public:
 
   void start();
   void stop();
+  void resume();
 
   using NavigationGoalHandle =
       rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>;
@@ -117,6 +119,10 @@ private:
   frontier_exploration::FrontierSearch search_;
   rclcpp::TimerBase::SharedPtr exploring_timer_;
   // rclcpp::TimerBase::SharedPtr oneshot_;
+
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr resume_subscription_;
+
+  void resumeCallback(const std_msgs::msg::Bool::SharedPtr msg);
 
   std::vector<geometry_msgs::msg::Point> frontier_blacklist_;
   geometry_msgs::msg::Point prev_goal_;

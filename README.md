@@ -49,7 +49,7 @@ Then just run the nav2 stack with slam:
 ```
 export TURTLEBOT3_MODEL=waffle
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/${ROS_DISTRO}/share/turtlebot3_gazebo/models
-ros2 launch nav2_bringup tb3_simulation_launch.py slam:=true
+ros2 launch nav2_bringup tb3_simulation_launch.py slam:=True
 ```
 
 And run this package with
@@ -57,7 +57,12 @@ And run this package with
 ros2 launch explore_lite explore.launch.py
 ```
 
-You can open a rviz2 and add the exploration frontiers marker to see the algorithm working and choose a frontier to explore.
+You can open rviz2 and add the exploration frontiers marker (topic is `explore/frontiers`) to see the algorithm working and the frontier chosen to explore.
+
+### Additional features
+#### Stop/Resume exploration
+By default the exploration node will start right away the frontier-based exploration algorithm. Alternatively, you can stop the exploration by publishing to a `False` to `explore/resume` topic. This will stop the exploration and the robot will stop moving. You can resume the exploration by publishing to `True` to `explore/resume`.
+
 
 #### TB3 troubleshooting (with foxy)
 If you have trouble with TB3 in simulation, as we did, add these extra steps for configuring it.
