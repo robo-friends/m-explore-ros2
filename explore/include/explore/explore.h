@@ -49,8 +49,8 @@
 #include <memory>
 #include <mutex>
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/color_rgba.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/color_rgba.hpp>
 #include <string>
 #include <vector>
 #include <visualization_msgs/msg/marker_array.hpp>
@@ -120,8 +120,7 @@ private:
   rclcpp::TimerBase::SharedPtr exploring_timer_;
   // rclcpp::TimerBase::SharedPtr oneshot_;
 
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr
-      resume_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr resume_subscription_;
 
   void resumeCallback(const std_msgs::msg::Bool::SharedPtr msg);
 

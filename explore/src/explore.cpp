@@ -69,7 +69,8 @@ Explore::Explore()
   this->get_parameter("min_frontier_size", min_frontier_size);
   progress_timeout_ = timeout;
   move_base_client_ =
-      rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(this,ACTION_NAME);
+      rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
+          this, ACTION_NAME);
 
   search_ = frontier_exploration::FrontierSearch(costmap_client_.getCostmap(),
                                                  potential_scale_, gain_scale_,
@@ -77,15 +78,16 @@ Explore::Explore()
 
   if (visualize_) {
     marker_array_publisher_ =
-        this->create_publisher<visualization_msgs::msg::MarkerArray>("explore/frontier"
+        this->create_publisher<visualization_msgs::msg::MarkerArray>("explore/"
+                                                                     "frontier"
                                                                      "s",
                                                                      10);
   }
 
   // Subscription to resume or stop exploration
   resume_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
-      "explore/resume", 10, std::bind(&Explore::resumeCallback, this,
-                                  std::placeholders::_1));
+      "explore/resume", 10,
+      std::bind(&Explore::resumeCallback, this, std::placeholders::_1));
 
   RCLCPP_INFO(logger_, "Waiting to connect to move_base nav2 server");
   move_base_client_->wait_for_action_server();
@@ -96,7 +98,6 @@ Explore::Explore()
       [this]() { makePlan(); });
   // Start exploration right away
   exploring_timer_->execute_callback();
-
 }
 
 Explore::~Explore()
@@ -104,8 +105,8 @@ Explore::~Explore()
   stop();
 }
 
-
-void Explore::resumeCallback(const std_msgs::msg::Bool::SharedPtr msg){
+void Explore::resumeCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
   if (msg->data) {
     resume();
   } else {
@@ -149,13 +150,14 @@ void Explore::visualizeFrontiers(
   m.color.a = 255;
   // lives forever
 #ifdef ELOQUENT
-  m.lifetime = rclcpp::Duration(0); // deprecated in galactic warning
+  m.lifetime = rclcpp::Duration(0);  // deprecated in galactic warning
 #elif DASHING
-  m.lifetime = rclcpp::Duration(0); // deprecated in galactic warning
+  m.lifetime = rclcpp::Duration(0);  // deprecated in galactic warning
 #else
-  m.lifetime = rclcpp::Duration::from_seconds(0); // foxy onwards
+  m.lifetime = rclcpp::Duration::from_seconds(0);  // foxy onwards
 #endif
-  // m.lifetime = rclcpp::Duration::from_nanoseconds(0); // suggested in galactic
+  // m.lifetime = rclcpp::Duration::from_nanoseconds(0); // suggested in
+  // galactic
   m.frame_locked = true;
 
   // weighted frontiers are always sorted
@@ -332,7 +334,8 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
   //     ros::Duration(0, 0), [this](const ros::TimerEvent&) { makePlan(); },
   //     true);
 
-  // Because of the 1-thread-executor nature of ros2 I think timer is not needed.
+  // Because of the 1-thread-executor nature of ros2 I think timer is not
+  // needed.
   makePlan();
 }
 

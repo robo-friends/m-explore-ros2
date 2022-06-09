@@ -36,11 +36,11 @@
  *********************************************************************/
 
 #include <explore/costmap_client.h>
+#include <unistd.h>
 
 #include <functional>
 #include <mutex>
 #include <string>
-#include <unistd.h>
 
 namespace explore
 {
