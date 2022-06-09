@@ -320,15 +320,6 @@ void Explore::returnToInitialPose()
 
   auto send_goal_options =
       rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
-  // send_goal_options.goal_response_callback =
-  // std::bind(&Explore::goal_response_callback, this, _1);
-  // send_goal_options.feedback_callback =
-  //   std::bind(&Explore::feedback_callback, this, _1, _2);
-  // send_goal_options.result_callback =
-  //     [this,
-  //      target_position](const NavigationGoalHandle::WrappedResult& result) {
-  //       reachedGoal(result, target_position);
-  //     };
   move_base_client_->async_send_goal(goal, send_goal_options);
 }
 
