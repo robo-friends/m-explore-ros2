@@ -1,6 +1,7 @@
 /**:
   ros__parameters:
     robot_base_frame: base_link
+    return_to_init: true
     costmap_topic: map
     costmap_updates_topic: map_updates
     visualize: true
