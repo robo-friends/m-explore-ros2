@@ -102,18 +102,16 @@ Explore::Explore()
     geometry_msgs::msg::TransformStamped transformStamped;
     std::string map_frame = costmap_client_.getGlobalFrameID();
     try {
-        transformStamped = tf_buffer_.lookupTransform(
-        map_frame, robot_base_frame_,
-        tf2::TimePointZero);
-        initial_pose_.position.x = transformStamped.transform.translation.x;
-        initial_pose_.position.y = transformStamped.transform.translation.y;
-        initial_pose_.orientation = transformStamped.transform.rotation;
-    } catch (tf2::TransformException & ex) {
-        RCLCPP_ERROR(
-        logger_, "Could find transform from %s to %s: %s",
-        map_frame.c_str(), robot_base_frame_.c_str(), ex.what());
-        return_to_init_ = false;
-        return;
+      transformStamped = tf_buffer_.lookupTransform(
+          map_frame, robot_base_frame_, tf2::TimePointZero);
+      initial_pose_.position.x = transformStamped.transform.translation.x;
+      initial_pose_.position.y = transformStamped.transform.translation.y;
+      initial_pose_.orientation = transformStamped.transform.rotation;
+    } catch (tf2::TransformException& ex) {
+      RCLCPP_ERROR(logger_, "Could find transform from %s to %s: %s",
+                   map_frame.c_str(), robot_base_frame_.c_str(), ex.what());
+      return_to_init_ = false;
+      return;
     }
   }
 
@@ -312,7 +310,8 @@ void Explore::makePlan()
   move_base_client_->async_send_goal(goal, send_goal_options);
 }
 
-void Explore::returnToInitialPose(){
+void Explore::returnToInitialPose()
+{
   RCLCPP_INFO(logger_, "Returning to initial pose.");
   auto goal = nav2_msgs::action::NavigateToPose::Goal();
   goal.pose.pose.position = initial_pose_.position;
@@ -331,7 +330,7 @@ void Explore::returnToInitialPose(){
   //      target_position](const NavigationGoalHandle::WrappedResult& result) {
   //       reachedGoal(result, target_position);
   //     };
-  move_base_client_->async_send_goal(goal, send_goal_options);  
+  move_base_client_->async_send_goal(goal, send_goal_options);
 }
 
 bool Explore::goalOnBlacklist(const geometry_msgs::msg::Point& goal)
