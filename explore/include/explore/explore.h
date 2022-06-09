@@ -80,7 +80,7 @@ public:
   ~Explore();
 
   void start();
-  void stop();
+  void stop(bool finished_exploring = false);
   void resume();
 
   using NavigationGoalHandle =
@@ -121,7 +121,6 @@ private:
   // rclcpp::TimerBase::SharedPtr oneshot_;
 
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr resume_subscription_;
-
   void resumeCallback(const std_msgs::msg::Bool::SharedPtr msg);
 
   std::vector<geometry_msgs::msg::Point> frontier_blacklist_;
@@ -130,11 +129,16 @@ private:
   rclcpp::Time last_progress_;
   size_t last_markers_count_;
 
+  geometry_msgs::msg::Pose initial_pose_;
+  void returnToInitialPose(void);
+
   // parameters
   double planner_frequency_;
   double potential_scale_, orientation_scale_, gain_scale_;
   double progress_timeout_;
   bool visualize_;
+  bool return_to_init_;
+  std::string robot_base_frame_;
 };
 }  // namespace explore
 

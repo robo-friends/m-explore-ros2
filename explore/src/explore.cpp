@@ -59,6 +59,7 @@ Explore::Explore()
   this->declare_parameter<float>("orientation_scale", 0.0);
   this->declare_parameter<float>("gain_scale", 1.0);
   this->declare_parameter<float>("min_frontier_size", 0.5);
+  this->declare_parameter<bool>("return_to_init", false);
 
   this->get_parameter("planner_frequency", planner_frequency_);
   this->get_parameter("progress_timeout", timeout);
@@ -67,6 +68,9 @@ Explore::Explore()
   this->get_parameter("orientation_scale", orientation_scale_);
   this->get_parameter("gain_scale", gain_scale_);
   this->get_parameter("min_frontier_size", min_frontier_size);
+  this->get_parameter("return_to_init", return_to_init_);
+  this->get_parameter("robot_base_frame", robot_base_frame_);
+
   progress_timeout_ = timeout;
   move_base_client_ =
       rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
@@ -92,6 +96,26 @@ Explore::Explore()
   RCLCPP_INFO(logger_, "Waiting to connect to move_base nav2 server");
   move_base_client_->wait_for_action_server();
   RCLCPP_INFO(logger_, "Connected to move_base nav2 server");
+
+  if (return_to_init_) {
+    RCLCPP_INFO(logger_, "Getting initial pose of the robot");
+    geometry_msgs::msg::TransformStamped transformStamped;
+    std::string map_frame = costmap_client_.getGlobalFrameID();
+    try {
+        transformStamped = tf_buffer_.lookupTransform(
+        map_frame, robot_base_frame_,
+        tf2::TimePointZero);
+        initial_pose_.position.x = transformStamped.transform.translation.x;
+        initial_pose_.position.y = transformStamped.transform.translation.y;
+        initial_pose_.orientation = transformStamped.transform.rotation;
+    } catch (tf2::TransformException & ex) {
+        RCLCPP_ERROR(
+        logger_, "Could find transform from %s to %s: %s",
+        map_frame.c_str(), robot_base_frame_.c_str(), ex.what());
+        return_to_init_ = false;
+        return;
+    }
+  }
 
   exploring_timer_ = this->create_wall_timer(
       std::chrono::milliseconds((uint16_t)(1000.0 / planner_frequency_)),
@@ -219,7 +243,7 @@ void Explore::makePlan()
 
   if (frontiers.empty()) {
     RCLCPP_WARN(logger_, "No frontiers found, stopping.");
-    stop();
+    stop(true);
     return;
   }
 
@@ -236,7 +260,7 @@ void Explore::makePlan()
                        });
   if (frontier == frontiers.end()) {
     RCLCPP_WARN(logger_, "All frontiers traversed/tried out, stopping.");
-    stop();
+    stop(true);
     return;
   }
   geometry_msgs::msg::Point target_position = frontier->centroid;
@@ -286,6 +310,28 @@ void Explore::makePlan()
         reachedGoal(result, target_position);
       };
   move_base_client_->async_send_goal(goal, send_goal_options);
+}
+
+void Explore::returnToInitialPose(){
+  RCLCPP_INFO(logger_, "Returning to initial pose.");
+  auto goal = nav2_msgs::action::NavigateToPose::Goal();
+  goal.pose.pose.position = initial_pose_.position;
+  goal.pose.pose.orientation = initial_pose_.orientation;
+  goal.pose.header.frame_id = costmap_client_.getGlobalFrameID();
+  goal.pose.header.stamp = this->now();
+
+  auto send_goal_options =
+      rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
+  // send_goal_options.goal_response_callback =
+  // std::bind(&Explore::goal_response_callback, this, _1);
+  // send_goal_options.feedback_callback =
+  //   std::bind(&Explore::feedback_callback, this, _1, _2);
+  // send_goal_options.result_callback =
+  //     [this,
+  //      target_position](const NavigationGoalHandle::WrappedResult& result) {
+  //       reachedGoal(result, target_position);
+  //     };
+  move_base_client_->async_send_goal(goal, send_goal_options);  
 }
 
 bool Explore::goalOnBlacklist(const geometry_msgs::msg::Point& goal)
@@ -344,11 +390,15 @@ void Explore::start()
   RCLCPP_INFO(logger_, "Exploration started.");
 }
 
-void Explore::stop()
+void Explore::stop(bool finished_exploring)
 {
   RCLCPP_INFO(logger_, "Exploration stopped.");
   move_base_client_->async_cancel_all_goals();
   exploring_timer_->cancel();
+
+  if (return_to_init_ && finished_exploring) {
+    returnToInitialPose();
+  }
 }
 
 void Explore::resume()
