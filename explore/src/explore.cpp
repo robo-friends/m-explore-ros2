@@ -111,7 +111,6 @@ Explore::Explore()
       RCLCPP_ERROR(logger_, "Couldn't find transform from %s to %s: %s",
                    map_frame.c_str(), robot_base_frame_.c_str(), ex.what());
       return_to_init_ = false;
-      return;
     }
   }
 
