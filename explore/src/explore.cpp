@@ -108,7 +108,7 @@ Explore::Explore()
       initial_pose_.position.y = transformStamped.transform.translation.y;
       initial_pose_.orientation = transformStamped.transform.rotation;
     } catch (tf2::TransformException& ex) {
-      RCLCPP_ERROR(logger_, "Could find transform from %s to %s: %s",
+      RCLCPP_ERROR(logger_, "Couldn't find transform from %s to %s: %s",
                    map_frame.c_str(), robot_base_frame_.c_str(), ex.what());
       return_to_init_ = false;
       return;
