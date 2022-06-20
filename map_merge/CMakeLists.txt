@@ -23,6 +23,8 @@ find_package(image_geometry REQUIRED)
 find_package(map_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS thread)
 
@@ -43,6 +45,8 @@ set(DEPENDENCIES
   map_msgs
   nav_msgs
   tf2_geometry_msgs
+  tf2
+  tf2_ros
   OpenCV
 )
 
@@ -110,35 +114,44 @@ install(TARGETS map_merge
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
-ament_export_include_directories(include)
-ament_export_libraries(combine_grids)
-ament_package()
-
 
 #############
 ## Testing ##
 #############
-# if(CATKIN_ENABLE_TESTING)
-#   find_package(roslaunch REQUIRED)
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  set(ament_cmake_copyright_FOUND TRUE)
+  set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
 
-#   # download test data
-#   set(base_url https://raw.githubusercontent.com/hrnr/m-explore-extra/master/map_merge)
-#   catkin_download_test_data(${PROJECT_NAME}_map00.pgm ${base_url}/hector_maps/map00.pgm MD5 915609a85793ec1375f310d44f2daf87)
-#   catkin_download_test_data(${PROJECT_NAME}_map05.pgm ${base_url}/hector_maps/map05.pgm MD5 cb9154c9fa3d97e5e992592daca9853a)
-#   catkin_download_test_data(${PROJECT_NAME}_2011-08-09-12-22-52.pgm ${base_url}/gmapping_maps/2011-08-09-12-22-52.pgm MD5 3c2c38e7dec2b7a67f41069ab58badaa)
-#   catkin_download_test_data(${PROJECT_NAME}_2012-01-28-11-12-01.pgm ${base_url}/gmapping_maps/2012-01-28-11-12-01.pgm MD5 681e704044889c95e47b0c3aadd81f1e)
+  find_package(ament_cmake_gtest REQUIRED)
 
-#   catkin_add_gtest(test_merging_pipeline test/test_merging_pipeline.cpp)
-#   # ensure that test data are downloaded before we run tests
-#   add_dependencies(test_merging_pipeline ${PROJECT_NAME}_map00.pgm ${PROJECT_NAME}_map05.pgm ${PROJECT_NAME}_2011-08-09-12-22-52.pgm ${PROJECT_NAME}_2012-01-28-11-12-01.pgm)
-#   target_link_libraries(test_merging_pipeline combine_grids ${catkin_LIBRARIES})
+  # download test data: TODO: ROS2 alternative? For now you'll need to download them manually
+  # set(base_url https://raw.githubusercontent.com/hrnr/m-explore-extra/master/map_merge)
+  # ament_download(${base_url}/hector_maps/map00.pgm
+  #   MD5 915609a85793ec1375f310d44f2daf87
+  #   FILENAME ${PROJECT_NAME}_map00.pgm
+  # )
+  # catkin_download_test_data(${PROJECT_NAME}_map00.pgm ${base_url}/hector_maps/map00.pgm MD5 915609a85793ec1375f310d44f2daf87)
+  # catkin_download_test_data(${PROJECT_NAME}_map05.pgm ${base_url}/hector_maps/map05.pgm MD5 cb9154c9fa3d97e5e992592daca9853a)
+  # catkin_download_test_data(${PROJECT_NAME}_2011-08-09-12-22-52.pgm ${base_url}/gmapping_maps/2011-08-09-12-22-52.pgm MD5 3c2c38e7dec2b7a67f41069ab58badaa)
+  # catkin_download_test_data(${PROJECT_NAME}_2012-01-28-11-12-01.pgm ${base_url}/gmapping_maps/2012-01-28-11-12-01.pgm MD5 681e704044889c95e47b0c3aadd81f1e)
 
-#   # test all launch files
-#   # do not test from_map_server.launch as we don't want to add dependency on map_server and this
-#   # launchfile is not critical
-#   roslaunch_add_file_check(launch/map_merge.launch)
-#   roslaunch_add_file_check(launch/experiments)
-# endif()
+  ament_add_gtest(test_merging_pipeline test/test_merging_pipeline.cpp)
+  # ensure that test data are downloaded before we run tests
+  # add_dependencies(test_merging_pipeline ${PROJECT_NAME}_map00.pgm ${PROJECT_NAME}_map05.pgm ${PROJECT_NAME}_2011-08-09-12-22-52.pgm ${PROJECT_NAME}_2012-01-28-11-12-01.pgm)
+  target_link_libraries(test_merging_pipeline combine_grids ${catkin_LIBRARIES})
+  
+  # test all launch files
+  # do not test from_map_server.launch as we don't want to add dependency on map_server and this
+  # launchfile is not critical
+  # roslaunch_add_file_check(launch/map_merge.launch)
+  # roslaunch_add_file_check(launch/experiments)
+
+endif()
 
 
-
+ament_export_include_directories(include)
+ament_export_libraries(combine_grids)
+ament_package()
