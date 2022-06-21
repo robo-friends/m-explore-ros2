@@ -101,28 +101,27 @@ bool MergingPipeline::estimateTransforms(FeatureType feature_type,
   // no match found. try set first non-empty grid as reference frame. we try to
   // avoid setting empty grid as reference frame, in case some maps never
   // arrive. If all is empty just set null transforms.
-  // if (good_indices.size() == 1) {
-  //   transforms_.clear();
-  //   transforms_.resize(images_.size());
-  //   for (size_t i = 0; i < images_.size(); ++i) {
-  //     if (!images_[i].empty()) {
-  //       // set identity
-  //       transforms_[i] = cv::Mat::eye(3, 3, CV_64F);
-  //       break;
-  //     }
-  //   }
-  //   // RCLCPP_INFO(logger, "No match found between maps, setting first non-empty grid as reference frame");
-  //   return true;
-  // }
-
-  // Making some tests it is better to just return false if no match is found
-  // and not clear the last good transforms found
   if (good_indices.size() == 1) {
+    // transforms_.clear();
+    // transforms_.resize(images_.size());
+
+    // Making some tests to see if it is better to just return false if no match is found
+    // and not clear the last good transforms found
     if (images_.size() != transforms_.size()) {
       transforms_.clear();
       transforms_.resize(images_.size());
     }
     return false;
+
+    for (size_t i = 0; i < images_.size(); ++i) {
+      if (!images_[i].empty()) {
+        // set identity
+        transforms_[i] = cv::Mat::eye(3, 3, CV_64F);
+        break;
+      }
+    }
+    // RCLCPP_INFO(logger, "No match found between maps, setting first non-empty grid as reference frame");
+    return true;
   }
 
   // // Experimental: should we keep only the best confidence match overall?

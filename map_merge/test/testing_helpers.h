@@ -145,9 +145,26 @@ static inline bool consistentData(const nav_msgs::msg::OccupancyGrid& grid)
 }
 
 // ignores header, map_load_time and origin
-static inline bool operator==(const nav_msgs::msg::OccupancyGrid& grid1,
+// static inline bool operator==(const nav_msgs::msg::OccupancyGrid::SharedPtr grid1,
+//                               const nav_msgs::msg::OccupancyGrid::SharedPtr grid2)
+// {
+//   bool equal = true;
+//   equal &= grid1->info.width == grid2->info.width;
+//   equal &= grid1->info.height == grid2->info.height;
+//   equal &= std::abs(grid1->info.resolution - grid2->info.resolution) <
+//            std::numeric_limits<float>::epsilon();
+//   equal &= grid1->data.size() == grid2->data.size();
+//   for (size_t i = 0; i < grid1->data.size(); ++i) {
+//     equal &= grid1->data[i] == grid2->data[i];
+//   }
+//   return equal;
+// }
+
+// ignores header, map_load_time and origin
+static inline bool maps_equal(const nav_msgs::msg::OccupancyGrid& grid1,
                               const nav_msgs::msg::OccupancyGrid& grid2)
 {
+  // std::cout << "asdasdadsdth: " << std::endl;
   bool equal = true;
   equal &= grid1.info.width == grid2.info.width;
   equal &= grid1.info.height == grid2.info.height;

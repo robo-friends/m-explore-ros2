@@ -82,7 +82,8 @@ TEST(MergingPipeline, canStich1Grid)
 
   EXPECT_VALID_GRID(merged_grid);
   // don't use EXPECT_EQ, since it prints too much info
-  // EXPECT_TRUE(*merged_grid == *map); TODO
+  EXPECT_TRUE(maps_equal(*merged_grid, *map));
+
   // check estimated transforms
   auto transforms = merger.getTransforms();
   EXPECT_EQ(transforms.size(), (long unsigned int) 1);
@@ -286,7 +287,7 @@ TEST(MergingPipeline, oneEmptyImage)
 
   EXPECT_VALID_GRID(merged_grid);
   // don't use EXPECT_EQ, since it prints too much info
-  // EXPECT_TRUE(*merged_grid == *maps[1]); TODO
+  EXPECT_TRUE(maps_equal(*merged_grid, *maps[1]));
   // transforms
   EXPECT_EQ(transforms.size(), (long unsigned int) 2);
   EXPECT_TRUE(isIdentity(transforms[1]));
