@@ -152,7 +152,7 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_merging_pipeline test/test_merging_pipeline.cpp)
   # ensure that test data are downloaded before we run tests
-  add_dependencies(test_merging_pipeline ${PROJECT_NAME}_map00.pgm ${PROJECT_NAME}_map05.pgm ${PROJECT_NAME}_2011-08-09-12-22-52.pgm ${PROJECT_NAME}_2012-01-28-11-12-01.pgm)
+  # add_dependencies(test_merging_pipeline ${PROJECT_NAME}_map00.pgm ${PROJECT_NAME}_map05.pgm ${PROJECT_NAME}_2011-08-09-12-22-52.pgm ${PROJECT_NAME}_2012-01-28-11-12-01.pgm)
   target_link_libraries(test_merging_pipeline combine_grids ${catkin_LIBRARIES})
   
   # test all launch files
