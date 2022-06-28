@@ -155,12 +155,6 @@ if(BUILD_TESTING)
   # add_dependencies(test_merging_pipeline ${PROJECT_NAME}_map00.pgm ${PROJECT_NAME}_map05.pgm ${PROJECT_NAME}_2011-08-09-12-22-52.pgm ${PROJECT_NAME}_2012-01-28-11-12-01.pgm)
   target_link_libraries(test_merging_pipeline combine_grids ${catkin_LIBRARIES})
   
-  # test all launch files
-  # do not test from_map_server.launch as we don't want to add dependency on map_server and this
-  # launchfile is not critical
-  # roslaunch_add_file_check(launch/map_merge.launch)
-  # roslaunch_add_file_check(launch/experiments)
-
 endif()
 
 
