@@ -15,7 +15,7 @@ jobs:
           package-name: multirobot_map_merge
           target-ros2-distro: galactic
           skip-tests: true
-      - name: Debug
+      - name: Run gtests manually
         run: |
           source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
           cd ros_ws/build/multirobot_map_merge

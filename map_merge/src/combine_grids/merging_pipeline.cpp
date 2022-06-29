@@ -102,16 +102,16 @@ bool MergingPipeline::estimateTransforms(FeatureType feature_type,
   // avoid setting empty grid as reference frame, in case some maps never
   // arrive. If all is empty just set null transforms.
   if (good_indices.size() == 1) {
-    transforms_.clear();
-    transforms_.resize(images_.size());
+    // transforms_.clear();
+    // transforms_.resize(images_.size());
 
     // Making some tests to see if it is better to just return false if no match is found
     // and not clear the last good transforms found
-    // if (images_.size() != transforms_.size()) {
-    //   transforms_.clear();
-    //   transforms_.resize(images_.size());
-    // }
-    // return false;
+    if (images_.size() != transforms_.size()) {
+      transforms_.clear();
+      transforms_.resize(images_.size());
+    }
+    return false;
 
     for (size_t i = 0; i < images_.size(); ++i) {
       if (!images_[i].empty()) {
