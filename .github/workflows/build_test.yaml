@@ -17,4 +17,5 @@ jobs:
           skip-tests: true
       - name: Debug
         run: |
-          ls -la
+          cd ros_ws/build/multirobot_map_merge
+          ./test_merging_pipeline
