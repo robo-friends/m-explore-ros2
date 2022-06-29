@@ -1,0 +1,18 @@
+name: ROS2 build/tests
+on:
+  pull_request:
+jobs:
+  build_and_tests:
+    steps:
+      - uses: ros-tooling/setup-ros@v0.3
+        with:
+          required-ros-distributions: galactic
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - uses: ros-tooling/action-ros-ci@v0.2
+        with:
+          package-name: multirobot_map_merge
+          target-ros2-distro: galactic
+      - name: Install opentok/extra dependencies
+          run: |
+            ls -la
