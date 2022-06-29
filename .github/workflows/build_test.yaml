@@ -1,0 +1,22 @@
+name: ROS2 build/tests 
+on:
+  pull_request:
+jobs:
+  build_and_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ros-tooling/setup-ros@v0.3
+        with:
+          required-ros-distributions: galactic
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - uses: ros-tooling/action-ros-ci@v0.2
+        with:
+          package-name: multirobot_map_merge
+          target-ros2-distro: galactic
+          skip-tests: true
+      - name: Run gtests manually
+        run: |
+          source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
+          cd ros_ws/build/multirobot_map_merge
+          ./test_merging_pipeline
