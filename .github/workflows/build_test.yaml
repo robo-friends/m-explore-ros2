@@ -14,5 +14,5 @@ jobs:
           package-name: multirobot_map_merge
           target-ros2-distro: galactic
       - name: Install opentok/extra dependencies
-          run: |
-            ls -la
+        run: |
+          ls -la
