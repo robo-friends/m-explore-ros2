@@ -3,6 +3,7 @@ on:
   pull_request:
 jobs:
   build_and_tests:
+    runs-on: ubuntu-latest
     steps:
       - uses: ros-tooling/setup-ros@v0.3
         with:
@@ -13,6 +14,6 @@ jobs:
         with:
           package-name: multirobot_map_merge
           target-ros2-distro: galactic
-      - name: Install opentok/extra dependencies
+      - name: Debug
         run: |
           ls -la
