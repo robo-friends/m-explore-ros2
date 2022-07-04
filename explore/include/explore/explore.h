@@ -139,6 +139,7 @@ private:
   bool visualize_;
   bool return_to_init_;
   std::string robot_base_frame_;
+  bool resuming_ = false;
 };
 }  // namespace explore
 
