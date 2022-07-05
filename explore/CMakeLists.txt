@@ -88,7 +88,7 @@ target_include_directories(explore PUBLIC
   $<INSTALL_INTERFACE:include>)
 
 
-target_link_libraries(explore)
+target_link_libraries(explore ${rclcpp_LIBRARIES})
 
 ament_target_dependencies(explore ${DEPENDENCIES})
 
@@ -96,6 +96,25 @@ install(TARGETS explore
   DESTINATION lib/${PROJECT_NAME})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
+
+#############
+## Testing ##
+#############
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  set(ament_cmake_copyright_FOUND TRUE)
+  set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+
+  ament_add_gtest(test_explore test/test_explore.cpp)
+  target_link_libraries(test_explore ${catkin_LIBRARIES})
+  ament_target_dependencies(test_explore ${DEPENDENCIES})
+
+  
+endif()
 
 
 ament_export_include_directories(include)

@@ -40,6 +40,15 @@
 
 #include <thread>
 
+inline static bool same_point(const geometry_msgs::msg::Point& one,
+                              const geometry_msgs::msg::Point& two)
+{
+  double dx = one.x - two.x;
+  double dy = one.y - two.y;
+  double dist = sqrt(dx * dx + dy * dy);
+  return dist < 0.01;
+}
+
 namespace explore
 {
 Explore::Explore()
@@ -189,7 +198,7 @@ void Explore::visualizeFrontiers(
   for (auto& frontier : frontiers) {
     m.type = visualization_msgs::msg::Marker::POINTS;
     m.id = int(id);
-    m.pose.position = {};
+    // m.pose.position = {}; // compile warning
     m.scale.x = 0.1;
     m.scale.y = 0.1;
     m.scale.z = 0.1;
@@ -263,7 +272,7 @@ void Explore::makePlan()
   geometry_msgs::msg::Point target_position = frontier->centroid;
 
   // time out if we are not making any progress
-  bool same_goal = prev_goal_ == target_position;
+  bool same_goal = same_point(prev_goal_, target_position);
 
   prev_goal_ = target_position;
   if (!same_goal || prev_distance_ > frontier->min_distance) {
@@ -272,13 +281,17 @@ void Explore::makePlan()
     prev_distance_ = frontier->min_distance;
   }
   // black list if we've made no progress for a long time
-  if (this->now() - last_progress_ >
-      tf2::durationFromSec(progress_timeout_)) {  // TODO: is progress_timeout_
-                                                  // in seconds?
+  if ((this->now() - last_progress_ >
+      tf2::durationFromSec(progress_timeout_)) && !resuming_) {
     frontier_blacklist_.push_back(target_position);
     RCLCPP_DEBUG(logger_, "Adding current goal to black list");
     makePlan();
     return;
+  }
+
+  // ensure only first call of makePlan was set resuming to true
+  if (resuming_) {
+    resuming_ = false;
   }
 
   // we don't need to do anything if we still pursuing the same goal
@@ -356,7 +369,8 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
       return;
     case rclcpp_action::ResultCode::CANCELED:
       RCLCPP_DEBUG(logger_, "Goal was canceled");
-      break;
+      // If goal canceled might be because exploration stopped from topic. Don't make new plan.
+      return;
     default:
       RCLCPP_WARN(logger_, "Unknown result code from move base nav2");
       break;
@@ -392,6 +406,7 @@ void Explore::stop(bool finished_exploring)
 
 void Explore::resume()
 {
+  resuming_ = true;
   RCLCPP_INFO(logger_, "Exploration resuming.");
   // Reactivate the timer
   exploring_timer_->reset();
