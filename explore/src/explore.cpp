@@ -69,6 +69,7 @@ Explore::Explore()
   this->declare_parameter<float>("gain_scale", 1.0);
   this->declare_parameter<float>("min_frontier_size", 0.5);
   this->declare_parameter<bool>("return_to_init", false);
+  this->declare_parameter<bool>("move_base_control", true);
 
   this->get_parameter("planner_frequency", planner_frequency_);
   this->get_parameter("progress_timeout", timeout);
@@ -78,16 +79,23 @@ Explore::Explore()
   this->get_parameter("gain_scale", gain_scale_);
   this->get_parameter("min_frontier_size", min_frontier_size);
   this->get_parameter("return_to_init", return_to_init_);
+  this->get_parameter("move_base_control", move_base_control_);
   this->get_parameter("robot_base_frame", robot_base_frame_);
 
   progress_timeout_ = timeout;
-  move_base_client_ =
-      rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
-          this, ACTION_NAME);
 
   search_ = frontier_exploration::FrontierSearch(costmap_client_.getCostmap(),
                                                  potential_scale_, gain_scale_,
                                                  min_frontier_size);
+
+  all_frontiers_publisher_ = this->create_publisher<geometry_msgs::msg::PoseArray>(
+      "explore/all_frontiers", 10);
+
+  blacklisted_frontiers_publisher_ = this->create_publisher<geometry_msgs::msg::PoseArray>(
+      "explore/blacklisted_frontiers", 10);
+
+  goal_frontier_publisher_ = this->create_publisher<geometry_msgs::msg::Point>(
+      "explore/goal_frontier", 10);
 
   if (visualize_) {
     marker_array_publisher_ =
@@ -102,9 +110,14 @@ Explore::Explore()
       "explore/resume", 10,
       std::bind(&Explore::resumeCallback, this, std::placeholders::_1));
 
-  RCLCPP_INFO(logger_, "Waiting to connect to move_base nav2 server");
-  move_base_client_->wait_for_action_server();
-  RCLCPP_INFO(logger_, "Connected to move_base nav2 server");
+  if (move_base_control_) {
+    RCLCPP_INFO(logger_, "Waiting to connect to move_base nav2 server");
+    move_base_client_ =
+        rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
+            this, ACTION_NAME);
+    move_base_client_->wait_for_action_server();
+    RCLCPP_INFO(logger_, "Connected to move_base nav2 server");
+  }
 
   if (return_to_init_) {
     RCLCPP_INFO(logger_, "Getting initial pose of the robot");
@@ -243,9 +256,17 @@ void Explore::makePlan()
   // get frontiers sorted according to cost
   auto frontiers = search_.searchFrom(pose.position);
   RCLCPP_DEBUG(logger_, "found %lu frontiers", frontiers.size());
+  geometry_msgs::msg::PoseArray all_frontiers;
   for (size_t i = 0; i < frontiers.size(); ++i) {
+    geometry_msgs::msg::Pose frontier;
+    frontier.position = frontiers[i].centroid;
+    frontier.orientation.w = 1.;
+    all_frontiers.poses.push_back(frontier);
     RCLCPP_DEBUG(logger_, "frontier %zd cost: %f", i, frontiers[i].cost);
   }
+  all_frontiers.header.frame_id = costmap_client_.getGlobalFrameID();
+  all_frontiers.header.stamp = this->now();
+  all_frontiers_publisher_->publish(all_frontiers);
 
   if (frontiers.empty()) {
     RCLCPP_WARN(logger_, "No frontiers found, stopping.");
@@ -270,70 +291,57 @@ void Explore::makePlan()
     return;
   }
   geometry_msgs::msg::Point target_position = frontier->centroid;
+  goal_frontier_publisher_->publish(target_position);
 
-  // time out if we are not making any progress
-  bool same_goal = same_point(prev_goal_, target_position);
+  if (move_base_control_) {
+    // time out if we are not making any progress
+    bool same_goal = same_point(prev_goal_, target_position);
 
-  prev_goal_ = target_position;
-  if (!same_goal || prev_distance_ > frontier->min_distance) {
-    // we have different goal or we made some progress
-    last_progress_ = this->now();
-    prev_distance_ = frontier->min_distance;
+    prev_goal_ = target_position;
+    // time out if we are not making any progress
+    if (!same_goal || prev_distance_ > frontier->min_distance) {
+      // we have different goal or we made some progress
+      last_progress_ = this->now();
+      prev_distance_ = frontier->min_distance;
+    }
+    // black list if we've made no progress for a long time
+    if (this->now() - last_progress_ >
+            tf2::durationFromSec(progress_timeout_) &&
+        !resuming_) {
+      frontier_blacklist_.push_back(target_position);
+      geometry_msgs::msg::PoseArray blacklisted_frontiers;
+      std::transform(frontier_blacklist_.begin(), frontier_blacklist_.end(),
+                     blacklisted_frontiers.poses.begin(),
+                     [](geometry_msgs::msg::Point frontier_point) {
+                       geometry_msgs::msg::Pose frontier_pose;
+                       frontier_pose.position = frontier_point;
+                       frontier_pose.orientation.w = 1.;
+                       return frontier_pose;
+                     });
+      blacklisted_frontiers.header.frame_id =
+          costmap_client_.getGlobalFrameID();
+      blacklisted_frontiers.header.stamp = this->now();
+      blacklisted_frontiers_publisher_->publish(blacklisted_frontiers);
+      RCLCPP_DEBUG(logger_, "Adding current goal to black list");
+      makePlan();
+      return;
+    }
+
+    // ensure only first call of makePlan was set resuming to true
+    if (resuming_) {
+      resuming_ = false;
+    }
+
+    // we don't need to do anything if we still pursuing the same goal
+    if (same_goal) {
+      return;
+    }
+
+    // send goal to move_base if we have something new to pursue
+    geometry_msgs::msg::Quaternion dummy_goal_orientation;
+    dummy_goal_orientation.w = 1.;
+    sendGoalToMoveBase(target_position, dummy_goal_orientation, true);
   }
-  // black list if we've made no progress for a long time
-  if ((this->now() - last_progress_ >
-      tf2::durationFromSec(progress_timeout_)) && !resuming_) {
-    frontier_blacklist_.push_back(target_position);
-    RCLCPP_DEBUG(logger_, "Adding current goal to black list");
-    makePlan();
-    return;
-  }
-
-  // ensure only first call of makePlan was set resuming to true
-  if (resuming_) {
-    resuming_ = false;
-  }
-
-  // we don't need to do anything if we still pursuing the same goal
-  if (same_goal) {
-    return;
-  }
-
-  RCLCPP_DEBUG(logger_, "Sending goal to move base nav2");
-
-  // send goal to move_base if we have something new to pursue
-  auto goal = nav2_msgs::action::NavigateToPose::Goal();
-  goal.pose.pose.position = target_position;
-  goal.pose.pose.orientation.w = 1.;
-  goal.pose.header.frame_id = costmap_client_.getGlobalFrameID();
-  goal.pose.header.stamp = this->now();
-
-  auto send_goal_options =
-      rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
-  // send_goal_options.goal_response_callback =
-  // std::bind(&Explore::goal_response_callback, this, _1);
-  // send_goal_options.feedback_callback =
-  //   std::bind(&Explore::feedback_callback, this, _1, _2);
-  send_goal_options.result_callback =
-      [this,
-       target_position](const NavigationGoalHandle::WrappedResult& result) {
-        reachedGoal(result, target_position);
-      };
-  move_base_client_->async_send_goal(goal, send_goal_options);
-}
-
-void Explore::returnToInitialPose()
-{
-  RCLCPP_INFO(logger_, "Returning to initial pose.");
-  auto goal = nav2_msgs::action::NavigateToPose::Goal();
-  goal.pose.pose.position = initial_pose_.position;
-  goal.pose.pose.orientation = initial_pose_.orientation;
-  goal.pose.header.frame_id = costmap_client_.getGlobalFrameID();
-  goal.pose.header.stamp = this->now();
-
-  auto send_goal_options =
-      rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
-  move_base_client_->async_send_goal(goal, send_goal_options);
 }
 
 bool Explore::goalOnBlacklist(const geometry_msgs::msg::Point& goal)
@@ -388,6 +396,29 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
   makePlan();
 }
 
+void Explore::sendGoalToMoveBase(
+    geometry_msgs::msg::Point& goal_position,
+    geometry_msgs::msg::Quaternion& goal_orientation, bool enable_callback)
+{
+  auto goal = nav2_msgs::action::NavigateToPose::Goal();
+  goal.pose.pose.position = goal_position;
+  goal.pose.pose.orientation = goal_orientation;
+  goal.pose.header.frame_id = costmap_client_.getGlobalFrameID();
+  goal.pose.header.stamp = this->now();
+
+  auto send_goal_options =
+      rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
+  if (enable_callback) {
+    send_goal_options.result_callback =
+        [this,
+         goal_position](const NavigationGoalHandle::WrappedResult& result) {
+          reachedGoal(result, goal_position);
+        };
+  }
+
+  move_base_client_->async_send_goal(goal, send_goal_options);
+}
+
 void Explore::start()
 {
   RCLCPP_INFO(logger_, "Exploration started.");
@@ -396,11 +427,13 @@ void Explore::start()
 void Explore::stop(bool finished_exploring)
 {
   RCLCPP_INFO(logger_, "Exploration stopped.");
-  move_base_client_->async_cancel_all_goals();
   exploring_timer_->cancel();
 
-  if (return_to_init_ && finished_exploring) {
-    returnToInitialPose();
+  if (move_base_control_ && return_to_init_ && finished_exploring) {
+    RCLCPP_INFO(logger_, "Returning to initial pose.");
+    move_base_client_->async_cancel_all_goals();
+    sendGoalToMoveBase(initial_pose_.position, initial_pose_.orientation,
+                       false);
   }
 }
 

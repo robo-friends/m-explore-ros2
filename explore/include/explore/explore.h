@@ -46,6 +46,7 @@
 #include <chrono>
 #include <cmath>
 #include <geometry_msgs/msg/point.hpp>
+#include <geometry_msgs/msg/pose_array.hpp>
 #include <memory>
 #include <mutex>
 #include <rclcpp/rclcpp.hpp>
@@ -107,6 +108,12 @@ private:
   void reachedGoal(const NavigationGoalHandle::WrappedResult& result,
                    const geometry_msgs::msg::Point& frontier_goal);
 
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr
+      all_frontiers_publisher_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr
+      blacklisted_frontiers_publisher_;
+  rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr
+      goal_frontier_publisher_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
       marker_array_publisher_;
   rclcpp::Logger logger_ = rclcpp::get_logger("ExploreNode");
@@ -130,7 +137,9 @@ private:
   size_t last_markers_count_;
 
   geometry_msgs::msg::Pose initial_pose_;
-  void returnToInitialPose(void);
+  void sendGoalToMoveBase(geometry_msgs::msg::Point& goal_position,
+                          geometry_msgs::msg::Quaternion& goal_orientation,
+                          bool enable_callback);
 
   // parameters
   double planner_frequency_;
@@ -138,6 +147,7 @@ private:
   double progress_timeout_;
   bool visualize_;
   bool return_to_init_;
+  bool move_base_control_;
   std::string robot_base_frame_;
   bool resuming_ = false;
 };
