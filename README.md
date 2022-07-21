@@ -38,7 +38,7 @@ RUNNING
 -------
 To run with a params file just run it with
 ```
-ros2 run explore_lite explore --ros-args --params-file <path_to_ros_ws>/m-explore/explore/config/params.yaml
+ros2 run explore_lite explore --ros-args --params-file <path_to_ros_ws>/m-explore-ros2/explore/config/params.yaml
 ```
 
 ### Running the explore demo with TB3
