@@ -39,6 +39,7 @@ def generate_launch_description():
         parameters=[config, {"use_sim_time": use_sim_time}],
         output="screen",
         remappings=remappings,
+        # arguments=['--ros-args', '--log-level', 'DEBUG' ]
     )
     ld.add_action(declare_use_sim_time_argument)
     ld.add_action(declare_namespace_argument)
