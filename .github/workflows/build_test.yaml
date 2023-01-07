@@ -4,34 +4,6 @@ on:
 jobs:
   build_and_tests:
     runs-on: ubuntu-latest
-    steps:
-      - uses: ros-tooling/setup-ros@v0.3
-        with:
-          required-ros-distributions: galactic
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - uses: ros-tooling/action-ros-ci@v0.2
-        with:
-          package-name: multirobot_map_merge
-          target-ros2-distro: galactic
-          skip-tests: true
-      - name: Run gtests manually multirobot_map_merge
-        run: |
-          source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
-          cd ros_ws/build/multirobot_map_merge
-          ./test_merging_pipeline
-      - uses: ros-tooling/action-ros-ci@v0.2
-        with:
-          package-name: explore_lite
-          target-ros2-distro: galactic
-          skip-tests: true
-      - name: Run gtests manually explore_lite
-        run: |
-          source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
-          cd ros_ws/build/explore_lite
-          ./test_explore
-  build_and_tests2:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         ros_distribution:
@@ -55,9 +27,25 @@ jobs:
         uses: ros-tooling/setup-ros@v0.4
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
-      - name: build and test ROS 2
+      - name: build multirobot_map_merge
         uses: ros-tooling/action-ros-ci@v0.2
         with:
           package-name: multirobot_map_merge
           target-ros2-distro: ${{ matrix.ros_distribution }}
           skip-tests: true
+      - name: Run gtests manually multirobot_map_merge
+        run: |
+          source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
+          cd ros_ws/build/multirobot_map_merge
+          ./test_merging_pipeline
+      - name: build explore_lite
+      - uses: ros-tooling/action-ros-ci@v0.2
+        with:
+          package-name: explore_lite
+          target-ros2-distro: galactic
+          skip-tests: true
+      - name: Run gtests manually explore_lite
+        run: |
+          source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
+          cd ros_ws/build/explore_lite
+          ./test_explore
