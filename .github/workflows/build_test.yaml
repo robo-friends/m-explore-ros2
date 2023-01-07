@@ -7,13 +7,13 @@ jobs:
     strategy:
       matrix:
         ros_distribution:
-          - foxy
+          # - foxy
           - galactic
           # - humble
         include:
           # Foxy Fitzroy (June 2020 - May 2023)
-          - docker_image: ubuntu:focal
-            ros_distribution: foxy
+          # - docker_image: ubuntu:focal
+          #   ros_distribution: foxy
           # Galactic Geochelone (May 2021 - November 2022)
           - docker_image: ubuntu:focal
             ros_distribution: galactic
