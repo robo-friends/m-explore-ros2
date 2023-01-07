@@ -95,6 +95,7 @@ target_link_libraries(map_merge combine_grids)
 # target_link_libraries(map_merge)
 
 ament_target_dependencies(map_merge ${DEPENDENCIES})
+ament_target_dependencies(combine_grids ${DEPENDENCIES})
 
 install(
   TARGETS combine_grids
