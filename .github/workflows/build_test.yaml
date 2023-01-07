@@ -30,3 +30,37 @@ jobs:
           source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
           cd ros_ws/build/explore_lite
           ./test_explore
+  build_and_tests2:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ros_distribution:
+          - foxy
+          - galactic
+          - humble
+        include:
+          # Foxy Fitzroy (June 2020 - May 2023)
+          - docker_image: ubuntu:focal
+            ros_distribution: foxy
+          # Galactic Geochelone (May 2021 - November 2022)
+          - docker_image: ubuntu:focal
+            ros_distribution: galactic
+          # Humble Hawksbill (May 2022 - May 2027)
+          - docker_image: ubuntu:jammy
+            ros_distribution: humble
+          # Rolling Ridley (No End-Of-Life)
+          - docker_image: ubuntu:jammy
+            ros_distribution: rolling
+    container:
+      image: ${{ matrix.docker_image }}
+    steps:
+      - name: setup ROS environment
+        uses: ros-tooling/setup-ros@v0.4
+        with:
+          required-ros-distributions: ${{ matrix.ros_distribution }}
+      - name: build and test ROS 2
+        if: ${{ matrix.ros_version == 2 }}
+        uses: ros-tooling/action-ros-ci@v0.2
+        with:
+          package-name: multirobot_map_merge
+          target-ros2-distro: ${{ matrix.ros_distribution }}
