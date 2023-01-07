@@ -27,25 +27,19 @@ jobs:
         uses: ros-tooling/setup-ros@v0.4
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
-      - name: build multirobot_map_merge
+      - name: build multirobot_map_merge and explore_lite
         uses: ros-tooling/action-ros-ci@v0.2
         with:
-          package-name: multirobot_map_merge
+          package-name: multirobot_map_merge explore_lite
           target-ros2-distro: ${{ matrix.ros_distribution }}
           skip-tests: true
       - name: Run gtests manually multirobot_map_merge
         run: |
-          source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
+          source /opt/ros/${{ matrix.ros_distribution }}/setup.sh && source ros_ws/install/setup.sh
           cd ros_ws/build/multirobot_map_merge
           ./test_merging_pipeline
-      - name: build explore_lite
-      - uses: ros-tooling/action-ros-ci@v0.2
-        with:
-          package-name: explore_lite
-          target-ros2-distro: galactic
-          skip-tests: true
       - name: Run gtests manually explore_lite
         run: |
-          source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
+          source /opt/ros/${{ matrix.ros_distribution }}/setup.sh && source ros_ws/install/setup.sh
           cd ros_ws/build/explore_lite
           ./test_explore
