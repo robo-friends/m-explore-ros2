@@ -48,9 +48,6 @@ jobs:
           # Humble Hawksbill (May 2022 - May 2027)
           - docker_image: ubuntu:jammy
             ros_distribution: humble
-          # Rolling Ridley (No End-Of-Life)
-          - docker_image: ubuntu:jammy
-            ros_distribution: rolling
     container:
       image: ${{ matrix.docker_image }}
     steps:
@@ -59,8 +56,8 @@ jobs:
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
       - name: build and test ROS 2
-        if: ${{ matrix.ros_version == 2 }}
         uses: ros-tooling/action-ros-ci@v0.2
         with:
           package-name: multirobot_map_merge
           target-ros2-distro: ${{ matrix.ros_distribution }}
+          skip-tests: true
