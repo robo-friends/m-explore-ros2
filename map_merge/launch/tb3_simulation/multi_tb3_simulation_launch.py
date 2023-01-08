@@ -169,62 +169,95 @@ def generate_launch_description():
     # Define commands for spawing the robots into Gazebo
     spawn_robots_cmds = []
     for robot_known, robot_unknown in zip(robots_known_poses, robots_unknown_poses):
-        spawn_robots_cmds.append(
-            Node(
-                package="gazebo_ros",
-                executable="spawn_entity.py",
-                output="screen",
-                arguments=[
-                    "-entity",
-                    robot_known["name"],
-                    "-file",
-                    robot_sdf,
-                    "-robot_namespace",
-                    TextSubstitution(text=str(robot_known["name"])),
-                    "-x",
-                    TextSubstitution(text=str(robot_known["x_pose"])),
-                    "-y",
-                    TextSubstitution(text=str(robot_known["y_pose"])),
-                    "-z",
-                    TextSubstitution(text=str(robot_known["z_pose"])),
-                    "-R",
-                    "0.0",
-                    "-P",
-                    "0.0",
-                    "-Y",
-                    "0.0",
-                ],
-                condition=IfCondition(known_init_poses),
+        # after humble release, use spawn_entity.py
+        if os.getenv("ROS_DISTRO") == "humble":
+            spawn_robots_cmds.append(
+                Node(
+                    package="gazebo_ros",
+                    executable="spawn_entity.py",
+                    output="screen",
+                    arguments=[
+                        "-entity",
+                        robot_known["name"],
+                        "-file",
+                        robot_sdf,
+                        "-robot_namespace",
+                        TextSubstitution(text=str(robot_known["name"])),
+                        "-x",
+                        TextSubstitution(text=str(robot_known["x_pose"])),
+                        "-y",
+                        TextSubstitution(text=str(robot_known["y_pose"])),
+                        "-z",
+                        TextSubstitution(text=str(robot_known["z_pose"])),
+                        "-R",
+                        "0.0",
+                        "-P",
+                        "0.0",
+                        "-Y",
+                        "0.0",
+                    ],
+                    condition=IfCondition(known_init_poses),
+                )
             )
-        )
-        spawn_robots_cmds.append(
-            Node(
-                package="gazebo_ros",
-                executable="spawn_entity.py",
-                output="screen",
-                arguments=[
-                    "-entity",
-                    robot_unknown["name"],
-                    "-file",
-                    robot_sdf,
-                    "-robot_namespace",
-                    TextSubstitution(text=str(robot_unknown["name"])),
-                    "-x",
-                    TextSubstitution(text=str(robot_unknown["x_pose"])),
-                    "-y",
-                    TextSubstitution(text=str(robot_unknown["y_pose"])),
-                    "-z",
-                    TextSubstitution(text=str(robot_unknown["z_pose"])),
-                    "-R",
-                    "0.0",
-                    "-P",
-                    "0.0",
-                    "-Y",
-                    "0.0",
-                ],
-                condition=UnlessCondition(known_init_poses),
+            spawn_robots_cmds.append(
+                Node(
+                    package="gazebo_ros",
+                    executable="spawn_entity.py",
+                    output="screen",
+                    arguments=[
+                        "-entity",
+                        robot_unknown["name"],
+                        "-file",
+                        robot_sdf,
+                        "-robot_namespace",
+                        TextSubstitution(text=str(robot_unknown["name"])),
+                        "-x",
+                        TextSubstitution(text=str(robot_unknown["x_pose"])),
+                        "-y",
+                        TextSubstitution(text=str(robot_unknown["y_pose"])),
+                        "-z",
+                        TextSubstitution(text=str(robot_unknown["z_pose"])),
+                        "-R",
+                        "0.0",
+                        "-P",
+                        "0.0",
+                        "-Y",
+                        "0.0",
+                    ],
+                    condition=UnlessCondition(known_init_poses),
+                )
             )
-        )
+        else:
+            spawn_robots_cmds.append(
+                IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource(
+                        os.path.join(bringup_dir, "launch", "spawn_tb3_launch.py")
+                    ),
+                    launch_arguments={
+                        "x_pose": TextSubstitution(text=str(robot_known["x_pose"])),
+                        "y_pose": TextSubstitution(text=str(robot_known["y_pose"])),
+                        "z_pose": TextSubstitution(text=str(robot_known["z_pose"])),
+                        "robot_name": robot_known["name"],
+                        "turtlebot_type": TextSubstitution(text="waffle"),
+                    }.items(),
+                    condition=IfCondition(known_init_poses),
+                )
+            )
+            spawn_robots_cmds.append(
+                IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource(
+                        os.path.join(bringup_dir, "launch", "spawn_tb3_launch.py")
+                    ),
+                    launch_arguments={
+                        "x_pose": TextSubstitution(text=str(robot_unknown["x_pose"])),
+                        "y_pose": TextSubstitution(text=str(robot_unknown["y_pose"])),
+                        "z_pose": TextSubstitution(text=str(robot_unknown["z_pose"])),
+                        "robot_name": robot_unknown["name"],
+                        "turtlebot_type": TextSubstitution(text="waffle"),
+                    }.items(),
+                    condition=UnlessCondition(known_init_poses),
+                )
+            )
 
     # Define commands for launching the navigation instances
     nav_instances_cmds = []

@@ -163,7 +163,7 @@ def generate_launch_description():
             ),
         ]
     )
-    # Not in GroupAction because namespace were prepended twice because 
+    # Not in GroupAction because namespace were prepended twice because
     # slam_gmapping.launch.py already accepts a namespace argument
     slam_gmapping_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
