@@ -85,11 +85,6 @@ RUN apt update && apt install --no-install-recommends -y \
     && apt autoremove && apt clean -y \
     && rm -rf /var/lib/apt/lists/* 
 
-# ROS2 source setup
-# RUN ROS_SOURCE="source /opt/ros/${ROS_DISTRO}/setup.sh" \
-#     && pip3 install -U argcomplete \
-#     && echo $ROS_SOURCE >> "/home/root/.bashrc"
-
 # Or your actual UID, GID on Linux if not the default 1000
 ARG USERNAME=dev
 ARG USER_UID=1000
@@ -112,6 +107,15 @@ RUN \
     && GAZEBO_SOURCE="source /usr/share/gazebo/setup.sh" \
     && echo $GAZEBO_SOURCE >> "/home/${USERNAME}/.bashrc" \
     && chown ${USERNAME} /home/${USERNAME}/.ignition
+
+# ROS2 source setup
+RUN ROS_SOURCE="source /opt/ros/${ROS_DISTRO}/setup.sh" \
+    && echo $ROS_SOURCE >> "/home/${USERNAME}/.bashrc"
+
+WORKDIR /workspace/ros_ws/src
+# Give permission to non-root user to access the workspace
+RUN chown -R ${USERNAME} /workspace/ros_ws
+RUN git clone https://github.com/charlielito/slam_gmapping.git --branch feature/namespace_launch
 
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=
