@@ -24,7 +24,7 @@ jobs:
       image: ${{ matrix.docker_image }}
     steps:
       - name: setup ROS environment
-        uses: ros-tooling/setup-ros@v0.3
+        uses: ros-tooling/setup-ros@v0.4
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
       - name: Checkout repository
@@ -37,7 +37,8 @@ jobs:
           skip-tests: true
       - name: Run gtests manually multirobot_map_merge
         run: |
-          source /opt/ros/${{ matrix.ros_distribution }}/setup.sh && source ros_ws/install/setup.sh
+          source /opt/ros/${{ matrix.ros_distribution }}/setup.sh
+          source ros_ws/install/setup.sh
           cd ros_ws/build/multirobot_map_merge
           ./test_merging_pipeline
       - name: Run gtests manually explore_lite
