@@ -3,30 +3,45 @@ on:
   pull_request:
 jobs:
   build_and_tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        ros_distribution:
+          - foxy
+          - galactic
+          - humble
+        include:
+          # Foxy Fitzroy (June 2020 - May 2023)
+          - docker_image: ubuntu:focal
+            ros_distribution: foxy
+          # Galactic Geochelone (May 2021 - November 2022)
+          - docker_image: ubuntu:focal
+            ros_distribution: galactic
+          # Humble Hawksbill (May 2022 - May 2027)
+          - docker_image: ubuntu:jammy
+            ros_distribution: humble
+    container:
+      image: ${{ matrix.docker_image }}
     steps:
-      - uses: ros-tooling/setup-ros@v0.3
+      - name: setup ROS environment
+        uses: ros-tooling/setup-ros@v0.4
         with:
-          required-ros-distributions: galactic
+          required-ros-distributions: ${{ matrix.ros_distribution }}
       - name: Checkout repository
         uses: actions/checkout@v3
-      - uses: ros-tooling/action-ros-ci@v0.2
+      - name: build multirobot_map_merge and explore_lite
+        uses: ros-tooling/action-ros-ci@v0.2
         with:
-          package-name: multirobot_map_merge
-          target-ros2-distro: galactic
+          package-name: multirobot_map_merge explore_lite
+          target-ros2-distro: ${{ matrix.ros_distribution }}
           skip-tests: true
       - name: Run gtests manually multirobot_map_merge
         run: |
-          source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
+          . /opt/ros/${{ matrix.ros_distribution }}/setup.sh && . ros_ws/install/setup.sh
           cd ros_ws/build/multirobot_map_merge
           ./test_merging_pipeline
-      - uses: ros-tooling/action-ros-ci@v0.2
-        with:
-          package-name: explore_lite
-          target-ros2-distro: galactic
-          skip-tests: true
       - name: Run gtests manually explore_lite
         run: |
-          source /opt/ros/galactic/setup.sh && source ros_ws/install/setup.sh
+          . /opt/ros/${{ matrix.ros_distribution }}/setup.sh && . ros_ws/install/setup.sh
           cd ros_ws/build/explore_lite
           ./test_explore
