@@ -6,7 +6,8 @@ services:
     build:
       context: ../
       dockerfile: .devcontainer/Dockerfile
-    working_dir: /workspace/rpos_ws
+    working_dir: /workspace/ros_ws
+    user: dev
 
     network_mode: host
     ports:
@@ -38,7 +39,7 @@ services:
       - /dev/nvidia-uvm:/dev/nvidia-uvm
       - /dev/input:/dev/input
       - /dev/snd:/dev/snd
-      
+
     # Uncomment the next four lines if you will use a ptrace-based debuggers like C++, Go, and Rust.
     cap_add:
       - SYS_PTRACE

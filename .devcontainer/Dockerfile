@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
+FROM nvidia/cuda:11.7.1-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -86,12 +86,25 @@ RUN apt update && apt install --no-install-recommends -y \
     && rm -rf /var/lib/apt/lists/* 
 
 # ROS2 source setup
-RUN ROS_SOURCE="source /opt/ros/${ROS_DISTRO}/setup.sh" \
-    && pip3 install -U argcomplete \
-    && echo $ROS_SOURCE >> "/home/root/.bashrc"
+# RUN ROS_SOURCE="source /opt/ros/${ROS_DISTRO}/setup.sh" \
+#     && pip3 install -U argcomplete \
+#     && echo $ROS_SOURCE >> "/home/root/.bashrc"
 
+# Or your actual UID, GID on Linux if not the default 1000
+ARG USERNAME=dev
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
 
-ENV USERNAME=root
+# Create a non-root user to use if preferred - see https://aka.ms/vscode-remote/containers/non-root-user.
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    # Add sudo support for non-root user
+    && apt-get update && apt-get install -y sudo \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME \
+    && apt-get autoremove && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/* 
+
 RUN \
     mkdir -p /home/${USERNAME}/.ignition/fuel/ \
     && echo "servers:\n  -\n    name: osrf\n    url: https://api.ignitionrobotics.org" >> /home/${USERNAME}/.ignition/fuel/config.yaml \
