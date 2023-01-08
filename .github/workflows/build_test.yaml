@@ -7,19 +7,19 @@ jobs:
     strategy:
       matrix:
         ros_distribution:
-          # - foxy
+          - foxy
           - galactic
-          # - humble
+          - humble
         include:
           # Foxy Fitzroy (June 2020 - May 2023)
-          # - docker_image: ubuntu:focal
-          #   ros_distribution: foxy
+          - docker_image: ubuntu:focal
+            ros_distribution: foxy
           # Galactic Geochelone (May 2021 - November 2022)
           - docker_image: ubuntu:focal
             ros_distribution: galactic
           # Humble Hawksbill (May 2022 - May 2027)
-          # - docker_image: ubuntu:jammy
-          #   ros_distribution: humble
+          - docker_image: ubuntu:jammy
+            ros_distribution: humble
     container:
       image: ${{ matrix.docker_image }}
     steps:
@@ -37,12 +37,11 @@ jobs:
           skip-tests: true
       - name: Run gtests manually multirobot_map_merge
         run: |
-          . /opt/ros/${{ matrix.ros_distribution }}/setup.sh
-          . ros_ws/install/setup.sh
+          . /opt/ros/${{ matrix.ros_distribution }}/setup.sh && . ros_ws/install/setup.sh
           cd ros_ws/build/multirobot_map_merge
           ./test_merging_pipeline
       - name: Run gtests manually explore_lite
         run: |
-          source /opt/ros/${{ matrix.ros_distribution }}/setup.sh && source ros_ws/install/setup.sh
+          . /opt/ros/${{ matrix.ros_distribution }}/setup.sh && . ros_ws/install/setup.sh
           cd ros_ws/build/explore_lite
           ./test_explore
