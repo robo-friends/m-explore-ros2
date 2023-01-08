@@ -23,7 +23,6 @@ The robots co-exist on a shared environment and are controlled by independent na
 import os
 
 from ament_index_python.packages import get_package_share_directory
-
 from launch import LaunchDescription, condition
 from launch.actions import (
     DeclareLaunchArgument,
@@ -35,6 +34,7 @@ from launch.actions import (
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, TextSubstitution
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -51,7 +51,7 @@ def generate_launch_description():
         {"name": "robot1", "x_pose": 0.0, "y_pose": 0.5, "z_pose": 0.01},
         {"name": "robot2", "x_pose": -3.0, "y_pose": 1.5, "z_pose": 0.01},
     ]
-    # Names and poses of the robots for unknown poses demo, the must be very close at beggining
+    # Names and poses of the robots for unknown poses demo, the must be very close at beginning
     robots_unknown_poses = [
         {"name": "robot1", "x_pose": -2.0, "y_pose": 0.5, "z_pose": 0.01},
         {"name": "robot2", "x_pose": -3.0, "y_pose": 0.5, "z_pose": 0.01},
@@ -159,36 +159,69 @@ def generate_launch_description():
         output="screen",
     )
 
+    robot_sdf = LaunchConfiguration("robot_sdf")
+    declare_robot_sdf_cmd = DeclareLaunchArgument(
+        "robot_sdf",
+        default_value=os.path.join(bringup_dir, "worlds", "waffle.model"),
+        description="Full path to robot sdf file to spawn the robot in gazebo",
+    )
+
     # Define commands for spawing the robots into Gazebo
     spawn_robots_cmds = []
     for robot_known, robot_unknown in zip(robots_known_poses, robots_unknown_poses):
         spawn_robots_cmds.append(
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(
-                    os.path.join(bringup_dir, "launch", "spawn_tb3_launch.py")
-                ),
-                launch_arguments={
-                    "x_pose": TextSubstitution(text=str(robot_known["x_pose"])),
-                    "y_pose": TextSubstitution(text=str(robot_known["y_pose"])),
-                    "z_pose": TextSubstitution(text=str(robot_known["z_pose"])),
-                    "robot_name": robot_known["name"],
-                    "turtlebot_type": TextSubstitution(text="waffle"),
-                }.items(),
+            Node(
+                package="gazebo_ros",
+                executable="spawn_entity.py",
+                output="screen",
+                arguments=[
+                    "-entity",
+                    robot_known["name"],
+                    "-file",
+                    robot_sdf,
+                    "-robot_namespace",
+                    TextSubstitution(text=str(robot_known["name"])),
+                    "-x",
+                    TextSubstitution(text=str(robot_known["x_pose"])),
+                    "-y",
+                    TextSubstitution(text=str(robot_known["y_pose"])),
+                    "-z",
+                    TextSubstitution(text=str(robot_known["z_pose"])),
+                    "-R",
+                    "0.0",
+                    "-P",
+                    "0.0",
+                    "-Y",
+                    "0.0",
+                ],
                 condition=IfCondition(known_init_poses),
             )
         )
         spawn_robots_cmds.append(
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(
-                    os.path.join(bringup_dir, "launch", "spawn_tb3_launch.py")
-                ),
-                launch_arguments={
-                    "x_pose": TextSubstitution(text=str(robot_unknown["x_pose"])),
-                    "y_pose": TextSubstitution(text=str(robot_unknown["y_pose"])),
-                    "z_pose": TextSubstitution(text=str(robot_unknown["z_pose"])),
-                    "robot_name": robot_unknown["name"],
-                    "turtlebot_type": TextSubstitution(text="waffle"),
-                }.items(),
+            Node(
+                package="gazebo_ros",
+                executable="spawn_entity.py",
+                output="screen",
+                arguments=[
+                    "-entity",
+                    robot_unknown["name"],
+                    "-file",
+                    robot_sdf,
+                    "-robot_namespace",
+                    TextSubstitution(text=str(robot_unknown["name"])),
+                    "-x",
+                    TextSubstitution(text=str(robot_unknown["x_pose"])),
+                    "-y",
+                    TextSubstitution(text=str(robot_unknown["y_pose"])),
+                    "-z",
+                    TextSubstitution(text=str(robot_unknown["z_pose"])),
+                    "-R",
+                    "0.0",
+                    "-P",
+                    "0.0",
+                    "-Y",
+                    "0.0",
+                ],
                 condition=UnlessCondition(known_init_poses),
             )
         )
@@ -280,6 +313,7 @@ def generate_launch_description():
     ld.add_action(declare_slam_toolbox_cmd)
     ld.add_action(declare_slam_gmapping_cmd)
     ld.add_action(declare_known_init_poses_cmd)
+    ld.add_action(declare_robot_sdf_cmd)
 
     # Add the actions to start gazebo, robots and simulations
     ld.add_action(start_gazebo_cmd)
