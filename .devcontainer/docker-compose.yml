@@ -1,0 +1,53 @@
+# version: "3.7"
+version: "2.3"
+services:
+  m-explore-ros2-humble:
+    runtime: nvidia
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile
+    working_dir: /workspace/ros_ws
+    user: dev
+
+    network_mode: host
+    ports:
+      - "80:80"
+    expose:
+      - 80
+
+    init: true
+    privileged: true
+
+    environment:
+      - DISPLAY=$DISPLAY
+      - QT_X11_NO_MITSHM=1
+      - UDEV=1
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,display
+    volumes:
+      # Update this to wherever you want VS Code to mount the folder of your project
+      - ..:/workspace/ros_ws/src/m-explore-ros2
+      # Forwards the local Docker socket to the container.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Enable GUI environments
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+      # NVIDIA drivers to use OpenGL, etc...
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/input:/dev/input
+      - /dev/snd:/dev/snd
+
+    # Uncomment the next four lines if you will use a ptrace-based debuggers like C++, Go, and Rust.
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+
+    # Overrides default command so things don't shut down after the process ends.
+    stdin_open: true
+    tty: true
+
+    command: "/bin/bash"

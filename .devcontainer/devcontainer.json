@@ -1,0 +1,24 @@
+{
+	"name": "Dev container",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "m-explore-ros2-humble",
+	"workspaceFolder": "/workspace/ros_ws",
+	"runArgs": [
+		"--runtime=nvidia"
+	],
+	"settings": {
+		"terminal.integrated.automationShell.linux": "/bin/bash",
+	},
+	"extensions": [
+		"ms-azuretools.vscode-docker",
+		"eamodio.gitlens",
+		"streetsidesoftware.code-spell-checker",
+		"oderwat.indent-rainbow",
+		"ms-vsliveshare.vsliveshare",
+		"pkief.material-icon-theme",
+		"ms-python.python",
+		"ms-vscode.cpptools",
+		"xaver.clang-format",
+		"ms-python.vscode-pylance",
+	],
+}
