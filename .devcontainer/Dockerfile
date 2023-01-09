@@ -1,5 +1,7 @@
-FROM nvidia/cuda:11.7.1-devel-ubuntu22.04
+# FROM nvidia/cuda:11.7.1-devel-ubuntu22.04
+FROM ubuntu:jammy
 # FROM nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
+# FROM ubuntu:focal
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -18,6 +20,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     curl  \
     gnupg2  \
     lsb-release \
+    ca-certificates \
     && apt autoremove -y && apt clean -y \
     && rm -rf /var/lib/apt/lists/*
 
@@ -117,6 +120,9 @@ WORKDIR /workspace/ros_ws/src
 # Give permission to non-root user to access the workspace
 RUN chown -R ${USERNAME} /workspace/ros_ws
 RUN git clone https://github.com/charlielito/slam_gmapping.git --branch feature/namespace_launch
+
+ENV TURTLEBOT3_MODEL=waffle
+ENV GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/${ROS_DISTRO}/share/turtlebot3_gazebo/models
 
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=
