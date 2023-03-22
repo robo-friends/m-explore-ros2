@@ -5,7 +5,7 @@ map_merge:
     estimation_rate: 0.5
     estimation_confidence: 0.6
     robot_map_topic: map
-    robot_map_updates_topic: map_udpates
+    robot_map_updates_topic: map_updates
     robot_namespace: ""
     merged_map_topic: map
     world_frame: world
