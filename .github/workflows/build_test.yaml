@@ -1,25 +1,23 @@
-name: ROS2 build/tests 
+name: ROS2 build/tests
 on:
   pull_request:
 jobs:
   build_and_tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         ros_distribution:
-          - foxy
-          - galactic
           - humble
+          - iron
+          - jazzy
         include:
-          # Foxy Fitzroy (June 2020 - May 2023)
-          - docker_image: ubuntu:focal
-            ros_distribution: foxy
-          # Galactic Geochelone (May 2021 - November 2022)
-          - docker_image: ubuntu:focal
-            ros_distribution: galactic
-          # Humble Hawksbill (May 2022 - May 2027)
+          # https://dlu.github.io/ros_clock/index.html
           - docker_image: ubuntu:jammy
             ros_distribution: humble
+          - docker_image: ubuntu:jammy
+            ros_distribution: iron
+          - docker_image: ubuntu:noble
+            ros_distribution: jazzy
     container:
       image: ${{ matrix.docker_image }}
     steps:
