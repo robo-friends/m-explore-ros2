@@ -41,7 +41,7 @@
 #include <map_merge/map_merge.h>
 #include <map_merge/ros1_names.hpp>
 #include <rcpputils/asserts.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 
 namespace map_merge
@@ -88,7 +88,7 @@ subscriptions_size_(0)
     std::chrono::milliseconds((uint16_t)(1000.0 / merging_rate_)),
     [this]() { mapMerging(); });
   // execute right away to simulate the ros1 first while loop on a thread
-  map_merging_timer_->execute_callback();
+  map_merging_timer_->execute_callback(nullptr);
 
   topic_subscribing_timer_ = this->create_wall_timer(
     std::chrono::milliseconds((uint16_t)(1000.0 / discovery_rate_)),
@@ -102,14 +102,14 @@ subscriptions_size_(0)
     r.sleep();
     i++;
   }
-  topic_subscribing_timer_->execute_callback(); 
+  topic_subscribing_timer_->execute_callback(nullptr); 
 
   if (!have_initial_poses_){
     pose_estimation_timer_ = this->create_wall_timer(
       std::chrono::milliseconds((uint16_t)(1000.0 / estimation_rate_)),
       [this]() { poseEstimation(); });
     // execute right away to simulate the ros1 first while loop on a thread
-    pose_estimation_timer_->execute_callback(); 
+    pose_estimation_timer_->execute_callback(nullptr); 
   }
 }
 
