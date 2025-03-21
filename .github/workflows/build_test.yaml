@@ -3,32 +3,32 @@ on:
   pull_request:
 jobs:
   build_and_tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         ros_distribution:
           - humble
-          - iron
           - jazzy
+          - rolling
         include:
           # https://dlu.github.io/ros_clock/index.html
           - docker_image: ubuntu:jammy
             ros_distribution: humble
-          - docker_image: ubuntu:jammy
-            ros_distribution: iron
           - docker_image: ubuntu:noble
             ros_distribution: jazzy
+          - docker_image: ubuntu:noble
+            ros_distribution: rolling
     container:
       image: ${{ matrix.docker_image }}
     steps:
       - name: setup ROS environment
-        uses: ros-tooling/setup-ros@v0.4
+        uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: build multirobot_map_merge and explore_lite
-        uses: ros-tooling/action-ros-ci@v0.3
+        uses: ros-tooling/action-ros-ci@v0.4
         with:
           package-name: multirobot_map_merge explore_lite
           target-ros2-distro: ${{ matrix.ros_distribution }}
