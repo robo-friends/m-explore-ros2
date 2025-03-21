@@ -64,7 +64,7 @@ subscriptions_size_(0)
   if (!this->has_parameter("robot_namespace")) this->declare_parameter<std::string>("robot_namespace", "");
   if (!this->has_parameter("merged_map_topic")) this->declare_parameter<std::string>("merged_map_topic", "map");
   if (!this->has_parameter("world_frame")) this->declare_parameter<std::string>("world_frame", "world");
-  
+
   this->get_parameter("merging_rate", merging_rate_);
   this->get_parameter("discovery_rate", discovery_rate_);
   this->get_parameter("estimation_rate", estimation_rate_);
@@ -80,7 +80,7 @@ subscriptions_size_(0)
   /* publishing */
   // Create a publisher using the QoS settings to emulate a ROS1 latched topic
   merged_map_publisher_ =
-      this->create_publisher<nav_msgs::msg::OccupancyGrid>(merged_map_topic, 
+      this->create_publisher<nav_msgs::msg::OccupancyGrid>(merged_map_topic,
       rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
 
   // Timers
@@ -88,7 +88,7 @@ subscriptions_size_(0)
     std::chrono::milliseconds((uint16_t)(1000.0 / merging_rate_)),
     [this]() { mapMerging(); });
   // execute right away to simulate the ros1 first while loop on a thread
-  map_merging_timer_->execute_callback(nullptr);
+  mapMerging();
 
   topic_subscribing_timer_ = this->create_wall_timer(
     std::chrono::milliseconds((uint16_t)(1000.0 / discovery_rate_)),
@@ -102,19 +102,19 @@ subscriptions_size_(0)
     r.sleep();
     i++;
   }
-  topic_subscribing_timer_->execute_callback(nullptr); 
+  topicSubscribing();
 
   if (!have_initial_poses_){
     pose_estimation_timer_ = this->create_wall_timer(
       std::chrono::milliseconds((uint16_t)(1000.0 / estimation_rate_)),
       [this]() { poseEstimation(); });
     // execute right away to simulate the ros1 first while loop on a thread
-    pose_estimation_timer_->execute_callback(nullptr); 
+    poseEstimation();
   }
 }
 
 /*
- * Subcribe to pose and map topics
+ * Subscribe to pose and map topics
  */
 void MapMerge::topicSubscribing()
 {
@@ -141,7 +141,7 @@ void MapMerge::topicSubscribing()
       if (!isRobotMapTopic(topic_name, topic_type)) {
         continue;
       }
-    
+
       robot_name = robotNameFromTopic(topic_name);
       if (robots_.count(robot_name)) {
         // we already know this robot
@@ -402,7 +402,7 @@ bool MapMerge::isRobotMapTopic(const std::string topic, std::string type)
   // /* we support only occupancy grids as maps */
   bool is_occupancy_grid = type == "nav_msgs/msg/OccupancyGrid";
 
-  // /* we don't want to subcribe on published merged map */
+  // /* we don't want to subscribe on published merged map */
   bool is_our_topic = merged_map_publisher_->get_topic_name() == topic;
 
   return is_occupancy_grid && !is_our_topic && contains_robot_namespace &&
@@ -440,12 +440,12 @@ int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
   // ROS1 code
-  // // this package is still in development -- start wil debugging enabled
+  // // this package is still in development -- start with debugging enabled
   // if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
   //                                    ros::console::levels::Debug)) {
   //   ros::console::notifyLoggerLevelsChanged();
   // }
-  
+
   // ROS2 code
   auto node = std::make_shared<map_merge::MapMerge>();
   rclcpp::spin(node);
