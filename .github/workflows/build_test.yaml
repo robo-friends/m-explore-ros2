@@ -9,15 +9,12 @@ jobs:
         ros_distribution:
           - humble
           - jazzy
-          - rolling
         include:
           # https://dlu.github.io/ros_clock/index.html
           - docker_image: ubuntu:jammy
             ros_distribution: humble
           - docker_image: ubuntu:noble
             ros_distribution: jazzy
-          - docker_image: ubuntu:noble
-            ros_distribution: rolling
     container:
       image: ${{ matrix.docker_image }}
     steps:
