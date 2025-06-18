@@ -1,17 +1,41 @@
 # m-explore ROS2 port
 
+## Fork status:
+
+This forks implemennts little changes to integrate m-explore in a benchmarking suite project.
+
+Changes:
+- Added a publisher to the `/goal_sent` topic when sending a goal to nav2, 
+  so that the benchmarking suite can easily track the goals sent by the exploration algorithm.
+- Edited the default explore params
+- Fixed some headers to avoid warnings.
+
 ROS2 package port for multi-robot autonomous exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Eloquent, Dashing, Foxy, and Galactic distros.
 
 ### Contents
-1. [Autonomous exploration](#Autonomous-exploration)
-    * [Demo in simulation with a TB3 robot](#Simulation-with-a-TB3-robot)    
-    * [Demo with a JetBot](#On-a-JetBot-with-realsense-cameras)
-    * [Instructions for the simulation demo](#Running-the-explore-demo-with-TB3)    
-2. [Multirobot map merge](#Multirobot-map-merge)
-    * [Simulation demo with known initial poses](#Known-initial-poses)
-    * [Simulation demo with unknown initial poses](#Unknown-initial-poses)
-    * [ROS2 requirements](#ROS2-requirements)
-    * [Instructions for simulation demos](#Running-the-demo-with-TB3)
+- [Fork status:](#fork-status)
+  - [Contents](#contents)
+- [Autonomous exploration](#autonomous-exploration)
+  - [Simulation with a TB3 robot](#simulation-with-a-tb3-robot)
+  - [On a JetBot with realsense cameras](#on-a-jetbot-with-realsense-cameras)
+- [Installing](#installing)
+- [Building](#building)
+- [RUNNING](#running)
+  - [Running the explore demo with TB3](#running-the-explore-demo-with-tb3)
+  - [Additional features](#additional-features)
+    - [Stop/Resume exploration](#stopresume-exploration)
+    - [Returning to initial pose](#returning-to-initial-pose)
+    - [TB3 troubleshooting (with foxy)](#tb3-troubleshooting-with-foxy)
+- [Multirobot map merge](#multirobot-map-merge)
+  - [Known initial poses](#known-initial-poses)
+  - [Unknown initial poses](#unknown-initial-poses)
+  - [ROS2 requirements](#ros2-requirements)
+    - [SLAM](#slam)
+    - [Nav2 gazebo spawner (deprecated in humble)](#nav2-gazebo-spawner-deprecated-in-humble)
+    - [Nav2 config files](#nav2-config-files)
+  - [Running the demo with TB3](#running-the-demo-with-tb3)
+- [WIKI](#wiki)
+- [COPYRIGHT](#copyright)
 
 ## Autonomous exploration
 
