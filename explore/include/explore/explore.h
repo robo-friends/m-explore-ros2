@@ -109,6 +109,9 @@ namespace explore
 
         // Publisher for the goal_sent topic
         rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr goal_sent_publisher_;
+        // Publisher for the goal_reached topic
+        rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr goal_reached_publisher_;
+
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
             marker_array_publisher_;
         rclcpp::Logger logger_ = rclcpp::get_logger("ExploreNode");

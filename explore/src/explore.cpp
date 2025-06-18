@@ -97,6 +97,8 @@ namespace explore
 
         // Add a publisher to the goal_sent topic 
         goal_sent_publisher_ = this->create_publisher<geometry_msgs::msg::Point>("/goal_sent", 10);
+        // Add a publisher to the goal_reached topic
+        goal_reached_publisher_ = this->create_publisher<geometry_msgs::msg::Point>("/goal_reached", 10);
 
 
         // Subscription to resume or stop exploration
@@ -362,10 +364,13 @@ namespace explore
         switch (result.code) {
         case rclcpp_action::ResultCode::SUCCEEDED:
             RCLCPP_DEBUG(logger_, "Goal was successful");
+            // Publish the result on the goal_reached topic
+            goal_reached_publisher_->publish(frontier_goal);
+
             break;
         case rclcpp_action::ResultCode::ABORTED:
             RCLCPP_DEBUG(logger_, "Goal was aborted");
-            frontier_blacklist_.push_back(frontier_goal);
+            frontier_blacklist_.push_back(frontier_goal); //TODO: is it really necessary to add the aborted goal to the blacklist?
             RCLCPP_DEBUG(logger_, "Adding current goal to black list");
             // If it was aborted probably because we've found another frontier goal,
             // so just return and don't make plan again
@@ -399,6 +404,16 @@ namespace explore
         RCLCPP_INFO(logger_, "Exploration stopped.");
         move_base_client_->async_cancel_all_goals();
         exploring_timer_->cancel();
+
+        // We send a msg to /goal_reached to indicate that exploration is finished
+        RCLCPP_INFO(logger_, "Sending goal reached message to indicate exploration finished.");
+        geometry_msgs::msg::Point goal_msg;
+        goal_msg.x = 0.0;
+        goal_msg.y = 0.0;
+        goal_msg.z = 0.0;
+        goal_reached_publisher_->publish(goal_msg);
+
+
 
         if (return_to_init_ && finished_exploring) {
             returnToInitialPose();
