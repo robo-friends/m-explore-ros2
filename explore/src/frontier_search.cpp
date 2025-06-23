@@ -106,7 +106,7 @@ Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
   Frontier output;
   output.centroid.x = 0;
   output.centroid.y = 0;
-  output.size = 1;
+  output.size = 0;
   output.min_distance = std::numeric_limits<double>::infinity();
 
   // record initial contact point for frontier

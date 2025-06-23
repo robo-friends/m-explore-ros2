@@ -7,8 +7,10 @@ This forks implemennts little changes to integrate m-explore in a benchmarking s
 Changes:
 - Added a publisher to the `/goal_sent` topic when sending a goal to nav2, 
   so that the benchmarking suite can easily track the goals sent by the exploration algorithm.
+- Added a publisher to the `/goal_reached` topic to track when the robot reaches a goal or when the exploration is stopped.
 - Edited the default explore params
 - Fixed some headers to avoid warnings.
+- Fixed the initialization of the frontier size (see [prina404's repo](https://github.com/prina404/m-explore/commit/4d2e9f34c0fc01d90cb81fbe51545fff22f9d0c9))
 
 ROS2 package port for multi-robot autonomous exploration of [m-explore](https://github.com/hrnr/m-explore). Currently tested on Eloquent, Dashing, Foxy, and Galactic distros.
 
