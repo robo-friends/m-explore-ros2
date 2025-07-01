@@ -223,7 +223,12 @@ namespace explore
             m.scale.y = scale;
             m.scale.z = scale;
             m.points = {};
-            m.color = green;
+            if (goalOnBlacklist(frontier.centroid)) {
+                m.color = red;
+            }
+            else {
+                m.color = green;
+            }
             markers.push_back(m);
             ++id;
         }
@@ -245,7 +250,7 @@ namespace explore
         auto pose = costmap_client_.getRobotPose();
         // get frontiers sorted according to cost
         auto frontiers = search_.searchFrom(pose.position);
-        RCLCPP_DEBUG(logger_, "found %lu frontiers", frontiers.size());
+        RCLCPP_INFO(logger_, "found %lu frontiers", frontiers.size());
         for (size_t i = 0; i < frontiers.size(); ++i) {
             RCLCPP_DEBUG(logger_, "frontier %zd cost: %f", i, frontiers[i].cost);
         }
@@ -268,7 +273,7 @@ namespace explore
                     return goalOnBlacklist(f.centroid);
                 });
         if (frontier == frontiers.end()) {
-            RCLCPP_WARN(logger_, "All frontiers traversed/tried out, stopping.");
+            RCLCPP_WARN(logger_, "All frontiers traversed/tried out/blacklisted, stopping.");
             stop(true);
             return;
         }
@@ -287,7 +292,7 @@ namespace explore
         if ((this->now() - last_progress_ >
             tf2::durationFromSec(progress_timeout_)) && !resuming_) {
             frontier_blacklist_.push_back(target_position);
-            RCLCPP_DEBUG(logger_, "Adding current goal to black list");
+            RCLCPP_INFO(logger_, "Adding current goal (%f, %f) to blacklist, because no progress for a long time!", target_position.x, target_position.y);
             makePlan();
             return;
         }
@@ -303,7 +308,7 @@ namespace explore
         }
 
 
-        RCLCPP_DEBUG(logger_, "Sending goal to move base nav2");
+        RCLCPP_INFO(logger_, "Sending goal (%f, %f) to move base nav2", target_position.x, target_position.y);
         // publish goal to goal_sent topic
         geometry_msgs::msg::Point goal_msg;
         goal_sent_publisher_->publish(target_position);
@@ -363,20 +368,20 @@ namespace explore
         const geometry_msgs::msg::Point& frontier_goal) {
         switch (result.code) {
         case rclcpp_action::ResultCode::SUCCEEDED:
-            RCLCPP_DEBUG(logger_, "Goal was successful");
+            RCLCPP_INFO(logger_, "Goal (%f, %f) was successful", frontier_goal.x, frontier_goal.y);
             // Publish the result on the goal_reached topic
             goal_reached_publisher_->publish(frontier_goal);
 
             break;
         case rclcpp_action::ResultCode::ABORTED:
-            RCLCPP_DEBUG(logger_, "Goal was aborted");
+            RCLCPP_INFO(logger_, "Goal (%f, %f) was aborted by the navigation stack", frontier_goal.x, frontier_goal.y);
             frontier_blacklist_.push_back(frontier_goal); //TODO: is it really necessary to add the aborted goal to the blacklist?
-            RCLCPP_DEBUG(logger_, "Adding current goal to black list");
+            RCLCPP_INFO(logger_, "Adding current goal (%f, %f) to black list because it was aborted!", frontier_goal.x, frontier_goal.y);
             // If it was aborted probably because we've found another frontier goal,
             // so just return and don't make plan again
             return;
         case rclcpp_action::ResultCode::CANCELED:
-            RCLCPP_DEBUG(logger_, "Goal was canceled");
+            RCLCPP_INFO(logger_, "Goal (%f, %f) was canceled by the navigation stack", frontier_goal.x, frontier_goal.y);
             // If goal canceled might be because exploration stopped from topic. Don't make new plan.
             return;
         default:
