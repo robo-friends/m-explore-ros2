@@ -405,19 +405,27 @@ namespace explore
         move_base_client_->async_cancel_all_goals();
         exploring_timer_->cancel();
 
-        // We send a msg to /goal_reached to indicate that exploration is finished
-        RCLCPP_INFO(logger_, "Sending goal reached message to indicate exploration finished.");
-        geometry_msgs::msg::Point goal_msg;
-        goal_msg.x = 0.0;
-        goal_msg.y = 0.0;
-        goal_msg.z = 0.0;
-        goal_reached_publisher_->publish(goal_msg);
 
 
 
         if (return_to_init_ && finished_exploring) {
+            // We send a msg to /goal_reached to indicate that exploration is finished
+            RCLCPP_INFO(logger_, "Sending goal reached message to indicate exploration finished.");
+            geometry_msgs::msg::Point goal_msg;
+            goal_msg.x = 0.0;
+            goal_msg.y = 0.0;
+            goal_msg.z = 0.0;
+            goal_reached_publisher_->publish(goal_msg);
+
+            // We return to the initial pose
             returnToInitialPose();
+            // We shut down the node
+            // TODO : add a timer / wait for the initial pose to be reached
+            RCLCPP_INFO(logger_, "Shutting down the explore node.");
+            rclcpp::shutdown();
         }
+
+
     }
 
     void Explore::resume() {
