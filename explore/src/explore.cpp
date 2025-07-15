@@ -85,7 +85,7 @@ namespace explore
 
         search_ = frontier_exploration::FrontierSearch(costmap_client_.getCostmap(),
             potential_scale_, gain_scale_,
-            min_frontier_size);
+            min_frontier_size, this->get_logger());
 
         if (visualize_) {
             marker_array_publisher_ =
@@ -106,12 +106,12 @@ namespace explore
             "explore/resume", 10,
             std::bind(&Explore::resumeCallback, this, std::placeholders::_1));
 
-        RCLCPP_INFO(logger_, "Waiting to connect to move_base nav2 server");
+        RCLCPP_INFO(this->get_logger(), "Waiting to connect to move_base nav2 server");
         move_base_client_->wait_for_action_server();
-        RCLCPP_INFO(logger_, "Connected to move_base nav2 server");
+        RCLCPP_INFO(this->get_logger(), "Connected to move_base nav2 server");
 
         if (return_to_init_) {
-            RCLCPP_INFO(logger_, "Getting initial pose of the robot");
+            RCLCPP_INFO(this->get_logger(), "Getting initial pose of the robot");
             geometry_msgs::msg::TransformStamped transformStamped;
             std::string map_frame = costmap_client_.getGlobalFrameID();
             try {
@@ -122,7 +122,7 @@ namespace explore
                 initial_pose_.orientation = transformStamped.transform.rotation;
             }
             catch (tf2::TransformException& ex) {
-                RCLCPP_ERROR(logger_, "Couldn't find transform from %s to %s: %s",
+                RCLCPP_ERROR(this->get_logger(), "Couldn't find transform from %s to %s: %s",
                     map_frame.c_str(), robot_base_frame_.c_str(), ex.what());
                 return_to_init_ = false;
             }
@@ -166,7 +166,7 @@ namespace explore
         green.b = 0;
         green.a = 1.0;
 
-        RCLCPP_DEBUG(logger_, "visualising %lu frontiers", frontiers.size());
+        RCLCPP_DEBUG(this->get_logger(), "visualising %lu frontiers", frontiers.size());
         visualization_msgs::msg::MarkerArray markers_msg;
         std::vector<visualization_msgs::msg::Marker>& markers = markers_msg.markers;
         visualization_msgs::msg::Marker m;
@@ -250,13 +250,13 @@ namespace explore
         auto pose = costmap_client_.getRobotPose();
         // get frontiers sorted according to cost
         auto frontiers = search_.searchFrom(pose.position);
-        RCLCPP_INFO(logger_, "found %lu frontiers", frontiers.size());
+        RCLCPP_INFO(this->get_logger(), "found %lu frontiers", frontiers.size());
         for (size_t i = 0; i < frontiers.size(); ++i) {
-            RCLCPP_DEBUG(logger_, "frontier %zd cost: %f", i, frontiers[i].cost);
+            RCLCPP_DEBUG(this->get_logger(), "frontier %zd cost: %f", i, frontiers[i].cost);
         }
 
         if (frontiers.empty()) {
-            RCLCPP_WARN(logger_, "No frontiers found, stopping.");
+            RCLCPP_WARN(this->get_logger(), "No frontiers found, stopping.");
             stop(true);
             return;
         }
@@ -273,7 +273,7 @@ namespace explore
                     return goalOnBlacklist(f.centroid);
                 });
         if (frontier == frontiers.end()) {
-            RCLCPP_WARN(logger_, "All frontiers traversed/tried out/blacklisted, stopping.");
+            RCLCPP_WARN(this->get_logger(), "All frontiers traversed/tried out/blacklisted, stopping.");
             stop(true);
             return;
         }
@@ -292,7 +292,7 @@ namespace explore
         if ((this->now() - last_progress_ >
             tf2::durationFromSec(progress_timeout_)) && !resuming_) {
             frontier_blacklist_.push_back(target_position);
-            RCLCPP_INFO(logger_, "Adding current goal (%f, %f) to blacklist, because no progress for a long time!", target_position.x, target_position.y);
+            RCLCPP_INFO(this->get_logger(), "Adding current goal (%f, %f) to blacklist, because no progress for a long time!", target_position.x, target_position.y);
             makePlan();
             return;
         }
@@ -308,7 +308,7 @@ namespace explore
         }
 
 
-        RCLCPP_INFO(logger_, "Sending goal (%f, %f) to move base nav2", target_position.x, target_position.y);
+        RCLCPP_INFO(this->get_logger(), "Sending goal (%f, %f) to move base nav2", target_position.x, target_position.y);
         // publish goal to goal_sent topic
         geometry_msgs::msg::Point goal_msg;
         goal_sent_publisher_->publish(target_position);
@@ -336,7 +336,7 @@ namespace explore
     }
 
     void Explore::returnToInitialPose() {
-        RCLCPP_INFO(logger_, "Returning to initial pose.");
+        RCLCPP_INFO(this->get_logger(), "Returning to initial pose.");
         auto goal = nav2_msgs::action::NavigateToPose::Goal();
         goal.pose.pose.position = initial_pose_.position;
         goal.pose.pose.orientation = initial_pose_.orientation;
@@ -368,24 +368,24 @@ namespace explore
         const geometry_msgs::msg::Point& frontier_goal) {
         switch (result.code) {
         case rclcpp_action::ResultCode::SUCCEEDED:
-            RCLCPP_INFO(logger_, "Goal (%f, %f) was successful", frontier_goal.x, frontier_goal.y);
+            RCLCPP_INFO(this->get_logger(), "Goal (%f, %f) was successful", frontier_goal.x, frontier_goal.y);
             // Publish the result on the goal_reached topic
             goal_reached_publisher_->publish(frontier_goal);
 
             break;
         case rclcpp_action::ResultCode::ABORTED:
-            RCLCPP_INFO(logger_, "Goal (%f, %f) was aborted by the navigation stack", frontier_goal.x, frontier_goal.y);
+            RCLCPP_INFO(this->get_logger(), "Goal (%f, %f) was aborted by the navigation stack", frontier_goal.x, frontier_goal.y);
             frontier_blacklist_.push_back(frontier_goal); //TODO: is it really necessary to add the aborted goal to the blacklist?
-            RCLCPP_INFO(logger_, "Adding current goal (%f, %f) to black list because it was aborted!", frontier_goal.x, frontier_goal.y);
+            RCLCPP_INFO(this->get_logger(), "Adding current goal (%f, %f) to black list because it was aborted!", frontier_goal.x, frontier_goal.y);
             // If it was aborted probably because we've found another frontier goal,
             // so just return and don't make plan again
             return;
         case rclcpp_action::ResultCode::CANCELED:
-            RCLCPP_INFO(logger_, "Goal (%f, %f) was canceled by the navigation stack", frontier_goal.x, frontier_goal.y);
+            RCLCPP_INFO(this->get_logger(), "Goal (%f, %f) was canceled by the navigation stack", frontier_goal.x, frontier_goal.y);
             // If goal canceled might be because exploration stopped from topic. Don't make new plan.
             return;
         default:
-            RCLCPP_WARN(logger_, "Unknown result code from move base nav2");
+            RCLCPP_WARN(this->get_logger(), "Unknown result code from move base nav2");
             break;
         }
         // find new goal immediately regardless of planning frequency.
@@ -402,11 +402,11 @@ namespace explore
     }
 
     void Explore::start() {
-        RCLCPP_INFO(logger_, "Exploration started.");
+        RCLCPP_INFO(this->get_logger(), "Exploration started.");
     }
 
     void Explore::stop(bool finished_exploring) {
-        RCLCPP_INFO(logger_, "Exploration stopped.");
+        RCLCPP_INFO(this->get_logger(), "Exploration stopped.");
         move_base_client_->async_cancel_all_goals();
         exploring_timer_->cancel();
 
@@ -415,7 +415,7 @@ namespace explore
 
         if (return_to_init_ && finished_exploring) {
             // We send a msg to /goal_reached to indicate that exploration is finished
-            RCLCPP_INFO(logger_, "Sending goal reached message to indicate exploration finished.");
+            RCLCPP_INFO(this->get_logger(), "Sending goal reached message to indicate exploration finished.");
             geometry_msgs::msg::Point goal_msg;
             goal_msg.x = 0.0;
             goal_msg.y = 0.0;
@@ -426,7 +426,7 @@ namespace explore
             returnToInitialPose();
             // We shut down the node
             // TODO : add a timer / wait for the initial pose to be reached
-            RCLCPP_INFO(logger_, "Shutting down the explore node.");
+            RCLCPP_INFO(this->get_logger(), "Shutting down the explore node.");
             rclcpp::shutdown();
         }
 
@@ -435,7 +435,7 @@ namespace explore
 
     void Explore::resume() {
         resuming_ = true;
-        RCLCPP_INFO(logger_, "Exploration resuming.");
+        RCLCPP_INFO(this->get_logger(), "Exploration resuming.");
         // Reactivate the timer
         exploring_timer_->reset();
         // Resume immediately
