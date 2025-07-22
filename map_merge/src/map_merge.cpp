@@ -49,7 +49,8 @@ namespace map_merge
 MapMerge::MapMerge() : Node("map_merge", rclcpp::NodeOptions()
                                        .allow_undeclared_parameters(true)
                                        .automatically_declare_parameters_from_overrides(true)),
-subscriptions_size_(0)
+subscriptions_size_(0),
+logger_(this->get_logger())
 {
   std::string frame_id;
   std::string merged_map_topic;
@@ -231,7 +232,7 @@ void MapMerge::mapMerging()
   nav_msgs::msg::OccupancyGrid::SharedPtr merged_map;
   {
     std::lock_guard<std::mutex> lock(pipeline_mutex_);
-    merged_map = pipeline_.composeGrids();
+    merged_map = pipeline_.composeGrids(logger_);
   }
   if (!merged_map) {
     // RCLCPP_INFO(logger_, "No map merged");
@@ -271,11 +272,11 @@ void MapMerge::poseEstimation()
   std::lock_guard<std::mutex> lock(pipeline_mutex_);
   pipeline_.feed(grids.begin(), grids.end());
   // TODO allow user to change feature type
-  bool success = pipeline_.estimateTransforms(combine_grids::FeatureType::AKAZE,
+  bool success = pipeline_.estimateTransforms(logger_,combine_grids::FeatureType::AKAZE,
                                confidence_threshold_);
-  // bool success = pipeline_.estimateTransforms(combine_grids::FeatureType::SURF,
+  // bool success = pipeline_.estimateTransforms(logger_, combine_grids::FeatureType::SURF,
   //                              confidence_threshold_);
-  // bool success = pipeline_.estimateTransforms(combine_grids::FeatureType::ORB,
+  // bool success = pipeline_.estimateTransforms(logger_, combine_grids::FeatureType::ORB,
   //                              confidence_threshold_);
   if (!success) {
     RCLCPP_INFO(logger_, "No grid poses estimated");

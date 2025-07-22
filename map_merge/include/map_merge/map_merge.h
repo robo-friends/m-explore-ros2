@@ -94,7 +94,7 @@ private:
   combine_grids::MergingPipeline pipeline_;
   std::mutex pipeline_mutex_;
 
-  rclcpp::Logger logger_ = rclcpp::get_logger("MapMergeNode");
+  rclcpp::Logger logger_;
 
   // timers
   rclcpp::TimerBase::SharedPtr map_merging_timer_;

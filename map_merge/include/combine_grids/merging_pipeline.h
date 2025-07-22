@@ -43,6 +43,7 @@
 #include <geometry_msgs/msg/transform.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <opencv2/core/utility.hpp>
 
@@ -59,9 +60,10 @@ class MergingPipeline
 public:
   template <typename InputIt>
   void feed(InputIt grids_begin, InputIt grids_end);
-  bool estimateTransforms(FeatureType feature = FeatureType::AKAZE,
+  bool estimateTransforms(rclcpp::Logger logger = rclcpp::get_logger("estimateTransforms"),
+                          FeatureType feature = FeatureType::AKAZE,
                           double confidence = 1.0);
-  nav_msgs::msg::OccupancyGrid::SharedPtr composeGrids();
+  nav_msgs::msg::OccupancyGrid::SharedPtr composeGrids(rclcpp::Logger logger = rclcpp::get_logger("composeGrids"));
 
   std::vector<geometry_msgs::msg::Transform> getTransforms() const;
   template <typename InputIt>
