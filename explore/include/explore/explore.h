@@ -109,6 +109,7 @@ private:
 
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
       marker_array_publisher_;
+  rclcpp::Logger logger_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
 
