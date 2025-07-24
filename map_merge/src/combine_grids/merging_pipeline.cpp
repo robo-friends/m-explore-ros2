@@ -48,7 +48,8 @@
 
 namespace combine_grids
 {
-bool MergingPipeline::estimateTransforms(FeatureType feature_type,
+bool MergingPipeline::estimateTransforms(rclcpp::Logger logger,
+                                         FeatureType feature_type,
                                          double confidence)
 {
   std::vector<cv::detail::ImageFeatures> image_features;
@@ -69,8 +70,7 @@ bool MergingPipeline::estimateTransforms(FeatureType feature_type,
   }
 
   /* find features in images */
-  static rclcpp::Logger logger = rclcpp::get_logger("estimateTransforms");
-  RCLCPP_DEBUG(logger, "computing features");
+  RCLCPP_DEBUG(logger, "[estimateTransforms] computing features");
   image_features.reserve(images_.size());
   for (const cv::Mat& image : images_) {
     image_features.emplace_back();
@@ -85,7 +85,7 @@ bool MergingPipeline::estimateTransforms(FeatureType feature_type,
   finder = {};
 
   /* find corespondent features */
-  RCLCPP_DEBUG(logger, "pairwise matching features");
+  RCLCPP_DEBUG(logger, "[estimateTransforms] pairwise matching features");
   (*matcher)(image_features, pairwise_matches);
   matcher = {};
 
@@ -120,29 +120,29 @@ bool MergingPipeline::estimateTransforms(FeatureType feature_type,
         break;
       }
     }
-    // RCLCPP_INFO(logger, "No match found between maps, setting first non-empty grid as reference frame");
+    // RCLCPP_INFO(logger, "[estimateTransforms] No match found between maps, setting first non-empty grid as reference frame");
     return true;
   }
 
   // // Experimental: should we keep only the best confidence match overall?
   // bool max_confidence_achieved_surpassed = false;
   // for (auto &match_info : pairwise_matches) {
-  //   RCLCPP_INFO(logger, "match info: %f", match_info.confidence);
+  //   RCLCPP_INFO(logger, "[estimateTransforms] match info: %f", match_info.confidence);
   //   if (match_info.confidence > max_confidence_achieved_){
   //     max_confidence_achieved_surpassed = true;
   //     max_confidence_achieved_ = match_info.confidence;
   //   }
   // }
   // if (!max_confidence_achieved_surpassed) {
-  //   RCLCPP_INFO(logger, "Max confidence achieved not surpassed, not using matching");
+  //   RCLCPP_INFO(logger, "[estimateTransforms] Max confidence achieved not surpassed, not using matching");
   //   return false;
   // }
   // else
-  //   RCLCPP_INFO(logger, "Max confidence achieved surpassed, optimizing");
+  //   RCLCPP_INFO(logger, "[estimateTransforms] Max confidence achieved surpassed, optimizing");
 
 
   /* estimate transform */
-  RCLCPP_DEBUG(logger, "calculating transforms in global reference frame");
+  RCLCPP_DEBUG(logger, "[estimateTransforms] calculating transforms in global reference frame");
   // note: currently used estimator never fails
   if (!(*estimator)(image_features, pairwise_matches, transforms)) {
     return false;
@@ -153,10 +153,10 @@ bool MergingPipeline::estimateTransforms(FeatureType feature_type,
   for (auto& transform : transforms) {
     transform.R.convertTo(transform.R, CV_32F);
   }
-  RCLCPP_DEBUG(logger, "optimizing global transforms");
+  RCLCPP_DEBUG(logger, "[estimateTransforms] optimizing global transforms");
   adjuster->setConfThresh(confidence);
   if (!(*adjuster)(image_features, pairwise_matches, transforms)) {
-    RCLCPP_WARN(logger, "Bundle adjusting failed. Could not estimate transforms.");
+    RCLCPP_WARN(logger, "[estimateTransforms] Bundle adjusting failed. Could not estimate transforms.");
     return false;
   }
 
@@ -182,18 +182,17 @@ static inline bool isIdentity(const cv::Mat& matrix)
   return cv::countNonZero(diff) == 0;
 }
 
-nav_msgs::msg::OccupancyGrid::SharedPtr MergingPipeline::composeGrids()
+nav_msgs::msg::OccupancyGrid::SharedPtr MergingPipeline::composeGrids(rclcpp::Logger logger)
 {
   // for checking states. Throws a rcpputils::IllegalStateException if the condition fails.
   rcpputils::check_true(images_.size() == transforms_.size());
   rcpputils::check_true(images_.size() == grids_.size());
-  static rclcpp::Logger logger = rclcpp::get_logger("composeGrids");
 
   if (images_.empty()) {
     return nullptr;
   }
 
-  RCLCPP_DEBUG(logger, "warping grids");
+  RCLCPP_DEBUG(logger, "[composeGrids] warping grids");
   internal::GridWarper warper;
   std::vector<cv::Mat> imgs_warped;
   imgs_warped.reserve(images_.size());
@@ -212,7 +211,7 @@ nav_msgs::msg::OccupancyGrid::SharedPtr MergingPipeline::composeGrids()
     return nullptr;
   }
 
-  RCLCPP_DEBUG(logger, "compositing result grid");
+  RCLCPP_DEBUG(logger, "[composeGrids] compositing result grid");
   nav_msgs::msg::OccupancyGrid::SharedPtr result;
   internal::GridCompositor compositor;
   result = compositor.compose(imgs_warped, rois);

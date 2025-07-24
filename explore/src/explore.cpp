@@ -53,6 +53,7 @@ namespace explore
 {
 Explore::Explore()
   : Node("explore_node")
+  , logger_(this->get_logger())
   , tf_buffer_(this->get_clock())
   , tf_listener_(tf_buffer_)
   , costmap_client_(*this, &tf_buffer_)
@@ -87,7 +88,7 @@ Explore::Explore()
 
   search_ = frontier_exploration::FrontierSearch(costmap_client_.getCostmap(),
                                                  potential_scale_, gain_scale_,
-                                                 min_frontier_size);
+                                                 min_frontier_size, logger_);
 
   if (visualize_) {
     marker_array_publisher_ =

@@ -14,11 +14,12 @@ using nav2_costmap_2d::NO_INFORMATION;
 
 FrontierSearch::FrontierSearch(nav2_costmap_2d::Costmap2D* costmap,
                                double potential_scale, double gain_scale,
-                               double min_frontier_size)
+                               double min_frontier_size, rclcpp::Logger logger)
   : costmap_(costmap)
   , potential_scale_(potential_scale)
   , gain_scale_(gain_scale)
   , min_frontier_size_(min_frontier_size)
+  , logger_(logger)
 {
 }
 
@@ -30,9 +31,7 @@ FrontierSearch::searchFrom(geometry_msgs::msg::Point position)
   // Sanity check that robot is inside costmap bounds before searching
   unsigned int mx, my;
   if (!costmap_->worldToMap(position.x, position.y, mx, my)) {
-    RCLCPP_ERROR(rclcpp::get_logger("FrontierSearch"), "Robot out of costmap "
-                                                       "bounds, cannot search "
-                                                       "for frontiers");
+    RCLCPP_ERROR(logger_, "[FrontierSearch] Robot out of costmap bounds, cannot search for frontiers");
     return frontier_list;
   }
 
@@ -57,9 +56,7 @@ FrontierSearch::searchFrom(geometry_msgs::msg::Point position)
     bfs.push(clear);
   } else {
     bfs.push(pos);
-    RCLCPP_WARN(rclcpp::get_logger("FrontierSearch"), "Could not find nearby "
-                                                      "clear cell to start "
-                                                      "search");
+    RCLCPP_WARN(logger_, "[FrontierSearch] Could not find nearby clear cell to start search");
   }
   visited_flag[bfs.front()] = true;
 
