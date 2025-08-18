@@ -38,8 +38,8 @@
 #ifndef COSTMAP_CLIENT_
 #define COSTMAP_CLIENT_
 
-#include <tf2_ros/buffer.h>
-#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.hpp>
+#include <tf2_ros/transform_listener.hpp>
 
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -55,9 +55,9 @@ class Costmap2DClient
 {
 public:
   /**
-   * @brief Contructs client and start listening
+   * @brief Constructs client and start listening
    * @details Constructor will block until first map update is received and
-   * map is ready to use, also will block before trasformation
+   * map is ready to use, also will block before transformation
    * robot_base_frame <-> global_frame is available.
    *
    * @param node node handle to retrieve parameters from

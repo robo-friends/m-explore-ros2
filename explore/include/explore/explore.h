@@ -40,8 +40,8 @@
 
 #include <explore/costmap_client.h>
 #include <explore/frontier_search.h>
-#include <geometry_msgs/msg/pose_stamped.h>
-#include <tf2_ros/transform_listener.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <tf2_ros/transform_listener.hpp>
 
 #include <chrono>
 #include <cmath>
