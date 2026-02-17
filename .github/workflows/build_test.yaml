@@ -16,7 +16,7 @@ jobs:
             ros_distribution: humble
           - docker_image: ubuntu:noble
             ros_distribution: jazzy
-          - docker_image: ubuntu:kilted
+          - docker_image: ubuntu:noble
             ros_distribution: kilted
     container:
       image: ${{ matrix.docker_image }}
