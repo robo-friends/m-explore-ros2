@@ -46,13 +46,10 @@
 #include <chrono>
 #include <cmath>
 #include <geometry_msgs/msg/point.hpp>
-#include <memory>
-#include <mutex>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/color_rgba.hpp>
 #include <string>
-#include <vector>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include "nav2_msgs/action/navigate_to_pose.hpp"
