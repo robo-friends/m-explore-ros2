@@ -81,7 +81,7 @@ install(DIRECTORY
 install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}
-)
+)fix: combine target_link_libraries calls for explore target
 
 
 add_executable(explore
@@ -94,6 +94,10 @@ target_include_directories(explore PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
+# Link generated messages
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+
 target_link_libraries(explore PUBLIC
   ${geometry_msgs_TARGETS}
   ${map_msgs_TARGETS}
@@ -105,13 +109,8 @@ target_link_libraries(explore PUBLIC
   rclcpp::rclcpp
   tf2::tf2
   tf2_ros::tf2_ros
+  "${cpp_typesupport_target}"
 )
-
-
-# Link generated messages
-rosidl_get_typesupport_target(cpp_typesupport_target
-  ${PROJECT_NAME} "rosidl_typesupport_cpp")
-target_link_libraries(explore "${cpp_typesupport_target}")
 
 install(TARGETS explore
   DESTINATION lib/${PROJECT_NAME})
