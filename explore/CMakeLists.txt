@@ -43,14 +43,7 @@ find_package(nav_msgs REQUIRED)
 find_package(map_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-
-# Generate messages
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/ExploreStatus.msg"
-  DEPENDENCIES std_msgs
-)
-
+find_package(explore_lite_msgs REQUIRED)
 
 set(DEPENDENCIES
   rclcpp
@@ -94,11 +87,8 @@ target_include_directories(explore PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
-# Link generated messages
-rosidl_get_typesupport_target(cpp_typesupport_target
-  ${PROJECT_NAME} "rosidl_typesupport_cpp")
-
 target_link_libraries(explore PUBLIC
+  ${explore_lite_msgs_TARGETS}
   ${geometry_msgs_TARGETS}
   ${map_msgs_TARGETS}
   ${nav2_msgs_TARGETS}
@@ -109,7 +99,6 @@ target_link_libraries(explore PUBLIC
   rclcpp::rclcpp
   tf2::tf2
   tf2_ros::tf2_ros
-  "${cpp_typesupport_target}"
 )
 
 install(TARGETS explore
@@ -138,6 +127,7 @@ if(BUILD_TESTING)
 endif()
 
 ament_export_dependencies(
+  explore_lite_msgs
   geometry_msgs
   map_msgs
   nav2_costmap_2d
@@ -151,5 +141,4 @@ ament_export_dependencies(
 )
 
 ament_export_include_directories(include)
-ament_export_dependencies(rosidl_default_runtime)
 ament_package()
