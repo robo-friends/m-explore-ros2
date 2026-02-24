@@ -40,20 +40,17 @@
 
 #include <explore/costmap_client.h>
 #include <explore/frontier_search.h>
-#include <geometry_msgs/msg/pose_stamped.h>
-#include <tf2_ros/transform_listener.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <tf2_ros/transform_listener.hpp>
 
 #include <chrono>
 #include <cmath>
 #include <explore_lite/msg/explore_status.hpp>
 #include <geometry_msgs/msg/point.hpp>
-#include <memory>
-#include <mutex>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/color_rgba.hpp>
 #include <string>
-#include <vector>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include "nav2_msgs/action/navigate_to_pose.hpp"
