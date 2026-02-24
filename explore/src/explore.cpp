@@ -101,7 +101,7 @@ Explore::Explore()
   // Publisher for exploration status
   rclcpp::QoS status_qos(10);
   status_qos.transient_local();
-  status_pub_ = this->create_publisher<std_msgs::msg::String>("explore/status", status_qos);
+  status_pub_ = this->create_publisher<explore_lite::msg::ExploreStatus>("explore/status", status_qos);
 
   // Subscription to resume or stop exploration
   resume_subscription_ = this->create_subscription<std_msgs::msg::Bool>(
@@ -133,8 +133,8 @@ Explore::Explore()
       std::chrono::milliseconds((uint16_t)(1000.0 / planner_frequency_)),
       [this]() { makePlan(); });
   // Start exploration right away
-  auto status_msg = std_msgs::msg::String(); 
-  status_msg.data = "exploration_started";
+  auto status_msg = explore_lite::msg::ExploreStatus(); 
+  status_msg.status = explore_lite::msg::ExploreStatus::EXPLORATION_STARTED;
   status_pub_->publish(status_msg);   
   makePlan();
 }
@@ -258,8 +258,8 @@ void Explore::makePlan()
 
   if (frontiers.empty()) {
     RCLCPP_WARN(logger_, "No frontiers found, stopping.");
-    auto status_msg = std_msgs::msg::String();
-    status_msg.data = "exploration_complete";
+    auto status_msg = explore_lite::msg::ExploreStatus();
+    status_msg.status = explore_lite::msg::ExploreStatus::EXPLORATION_COMPLETE;
     status_pub_->publish(status_msg);
     stop(true);
     return;
@@ -278,8 +278,8 @@ void Explore::makePlan()
                        });
   if (frontier == frontiers.end()) {
     RCLCPP_WARN(logger_, "All frontiers traversed/tried out, stopping.");
-    auto status_msg = std_msgs::msg::String();
-    status_msg.data = "exploration_complete";
+    auto status_msg = explore_lite::msg::ExploreStatus();
+    status_msg.status = explore_lite::msg::ExploreStatus::EXPLORATION_COMPLETE;
     status_pub_->publish(status_msg);
     stop(true);
     return;
@@ -340,8 +340,8 @@ void Explore::makePlan()
 void Explore::returnToInitialPose()
 {
   RCLCPP_INFO(logger_, "Returning to initial pose.");
-  auto status_msg = std_msgs::msg::String();
-  status_msg.data = "returning_to_origin";
+  auto status_msg = explore_lite::msg::ExploreStatus();
+  status_msg.status = explore_lite::msg::ExploreStatus::RETURNING_TO_ORIGIN;
   status_pub_->publish(status_msg);
   
   auto goal = nav2_msgs::action::NavigateToPose::Goal();
@@ -355,8 +355,8 @@ void Explore::returnToInitialPose()
   send_goal_options.result_callback = 
       [this](const NavigationGoalHandle::WrappedResult& result) {
         if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
-          auto status_msg = std_msgs::msg::String();
-          status_msg.data = "returned_to_origin";
+          auto status_msg = explore_lite::msg::ExploreStatus();
+          status_msg.status = explore_lite::msg::ExploreStatus::RETURNED_TO_ORIGIN;
           status_pub_->publish(status_msg);
           RCLCPP_INFO(logger_, "Successfully returned to initial pose.");
         }
@@ -418,8 +418,8 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
 void Explore::start()
 {
   RCLCPP_INFO(logger_, "Exploration started.");
-  auto status_msg = std_msgs::msg::String();
-  status_msg.data = "exploration_started";
+  auto status_msg = explore_lite::msg::ExploreStatus();
+  status_msg.status = explore_lite::msg::ExploreStatus::EXPLORATION_STARTED;
   status_pub_->publish(status_msg);
 }
 
@@ -429,8 +429,8 @@ void Explore::stop(bool finished_exploring)
   
   // Only publish paused status if manually stopped (not finished exploring)
   if (!finished_exploring) {
-    auto status_msg = std_msgs::msg::String();
-    status_msg.data = "exploration_paused";
+    auto status_msg = explore_lite::msg::ExploreStatus();
+    status_msg.status = explore_lite::msg::ExploreStatus::EXPLORATION_PAUSED;
     status_pub_->publish(status_msg);
   }
   
@@ -446,8 +446,8 @@ void Explore::resume()
 {
   resuming_ = true;
   RCLCPP_INFO(logger_, "Exploration resuming.");
-  auto status_msg = std_msgs::msg::String();
-  status_msg.data = "exploration_in_progress";
+  auto status_msg = explore_lite::msg::ExploreStatus();
+  status_msg.status = explore_lite::msg::ExploreStatus::EXPLORATION_IN_PROGRESS;
   status_pub_->publish(status_msg);
   // Reactivate the timer
   exploring_timer_->reset();

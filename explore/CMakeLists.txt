@@ -42,6 +42,13 @@ find_package(nav_msgs REQUIRED)
 find_package(map_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+# Generate messages
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/ExploreStatus.msg"
+  DEPENDENCIES std_msgs
+)
 
 
 set(DEPENDENCIES
@@ -92,6 +99,11 @@ target_link_libraries(explore ${rclcpp_LIBRARIES})
 
 ament_target_dependencies(explore ${DEPENDENCIES})
 
+# Link generated messages
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(explore "${cpp_typesupport_target}")
+
 install(TARGETS explore
   DESTINATION lib/${PROJECT_NAME})
 
@@ -118,4 +130,5 @@ endif()
 
 
 ament_export_include_directories(include)
+ament_export_dependencies(rosidl_default_runtime)
 ament_package()
