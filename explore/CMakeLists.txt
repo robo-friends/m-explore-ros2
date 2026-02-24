@@ -81,7 +81,7 @@ install(DIRECTORY
 install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}
-)fix: combine target_link_libraries calls for explore target
+)
 
 
 add_executable(explore
