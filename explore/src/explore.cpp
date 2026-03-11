@@ -133,9 +133,9 @@ Explore::Explore()
       std::chrono::milliseconds((uint16_t)(1000.0 / planner_frequency_)),
       [this]() { makePlan(); });
   // Start exploration right away
-  auto status_msg = explore_lite_msgs::msg::ExploreStatus(); 
+  auto status_msg = explore_lite_msgs::msg::ExploreStatus();
   status_msg.status = explore_lite_msgs::msg::ExploreStatus::EXPLORATION_STARTED;
-  status_pub_->publish(status_msg);   
+  status_pub_->publish(status_msg);
   makePlan();
 }
 
@@ -156,21 +156,9 @@ void Explore::resumeCallback(const std_msgs::msg::Bool::SharedPtr msg)
 void Explore::visualizeFrontiers(
     const std::vector<frontier_exploration::Frontier>& frontiers)
 {
-  std_msgs::msg::ColorRGBA blue;
-  blue.r = 0;
-  blue.g = 0;
-  blue.b = 1.0;
-  blue.a = 1.0;
-  std_msgs::msg::ColorRGBA red;
-  red.r = 1.0;
-  red.g = 0;
-  red.b = 0;
-  red.a = 1.0;
-  std_msgs::msg::ColorRGBA green;
-  green.r = 0;
-  green.g = 1.0;
-  green.b = 0;
-  green.a = 1.0;
+  const auto blue = std_msgs::msg::ColorRGBA().set__b(1.0).set__a(0.5);
+  const auto red = std_msgs::msg::ColorRGBA().set__r(1.0).set__a(0.5);
+  const auto green = std_msgs::msg::ColorRGBA().set__g(1.0).set__a(0.5);
 
   RCLCPP_DEBUG(logger_, "visualising %lu frontiers", frontiers.size());
   visualization_msgs::msg::MarkerArray markers_msg;
@@ -187,16 +175,7 @@ void Explore::visualizeFrontiers(
   m.color.g = 0;
   m.color.b = 255;
   m.color.a = 255;
-  // lives forever
-#ifdef ELOQUENT
-  m.lifetime = rclcpp::Duration(0);  // deprecated in galactic warning
-#elif DASHING
-  m.lifetime = rclcpp::Duration(0);  // deprecated in galactic warning
-#else
-  m.lifetime = rclcpp::Duration::from_seconds(0);  // foxy onwards
-#endif
-  // m.lifetime = rclcpp::Duration::from_nanoseconds(0); // suggested in
-  // galactic
+  // m.lifetime defaults to 0, means lives forever
   m.frame_locked = true;
 
   // weighted frontiers are always sorted
@@ -207,7 +186,9 @@ void Explore::visualizeFrontiers(
   for (auto& frontier : frontiers) {
     m.type = visualization_msgs::msg::Marker::POINTS;
     m.id = int(id);
-    // m.pose.position = {}; // compile warning
+    m.pose.position.x = 0.0;
+    m.pose.position.y = 0.0;
+    m.pose.position.z = 0.0;
     m.scale.x = 0.1;
     m.scale.y = 0.1;
     m.scale.z = 0.1;
@@ -221,7 +202,7 @@ void Explore::visualizeFrontiers(
     ++id;
     m.type = visualization_msgs::msg::Marker::SPHERE;
     m.id = int(id);
-    m.pose.position = frontier.initial;
+    m.pose.position = frontier.centroid;
     // scale frontier according to its cost (costier frontiers will be smaller)
     double scale = std::min(std::abs(min_cost * 0.4 / frontier.cost), 0.5);
     m.scale.x = scale;
@@ -343,7 +324,7 @@ void Explore::returnToInitialPose()
   auto status_msg = explore_lite_msgs::msg::ExploreStatus();
   status_msg.status = explore_lite_msgs::msg::ExploreStatus::RETURNING_TO_ORIGIN;
   status_pub_->publish(status_msg);
-  
+
   auto goal = nav2_msgs::action::NavigateToPose::Goal();
   goal.pose.pose.position = initial_pose_.position;
   goal.pose.pose.orientation = initial_pose_.orientation;
@@ -352,7 +333,7 @@ void Explore::returnToInitialPose()
 
   auto send_goal_options =
       rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
-  send_goal_options.result_callback = 
+  send_goal_options.result_callback =
       [this](const NavigationGoalHandle::WrappedResult& result) {
         if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
           auto status_msg = explore_lite_msgs::msg::ExploreStatus();
@@ -426,14 +407,14 @@ void Explore::start()
 void Explore::stop(bool finished_exploring)
 {
   RCLCPP_INFO(logger_, "Exploration stopped.");
-  
+
   // Only publish paused status if manually stopped (not finished exploring)
   if (!finished_exploring) {
     auto status_msg = explore_lite_msgs::msg::ExploreStatus();
     status_msg.status = explore_lite_msgs::msg::ExploreStatus::EXPLORATION_PAUSED;
     status_pub_->publish(status_msg);
   }
-  
+
   move_base_client_->async_cancel_all_goals();
   exploring_timer_->cancel();
 
