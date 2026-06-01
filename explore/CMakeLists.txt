@@ -101,6 +101,10 @@ target_link_libraries(explore PUBLIC
   tf2_ros::tf2_ros
 )
 
+if(nav2_msgs_VERSION VERSION_GREATER_EQUAL "1.3.0")
+  target_compile_definitions(explore PRIVATE NAV2_RESULT_HAS_ERROR_CODE)
+endif()
+
 install(TARGETS explore
   DESTINATION lib/${PROJECT_NAME})
 

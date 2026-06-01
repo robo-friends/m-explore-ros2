@@ -144,6 +144,8 @@ private:
   bool return_to_init_;
   std::string robot_base_frame_;
   bool resuming_ = false;
+  bool goal_active_{false};
+  rclcpp_action::GoalUUID active_goal_id_;
 };
 }  // namespace explore
 
