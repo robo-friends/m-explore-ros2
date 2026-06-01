@@ -26,7 +26,7 @@ jobs:
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: build multirobot_map_merge and explore_lite
         uses: ros-tooling/action-ros-ci@v0.4
         with:
