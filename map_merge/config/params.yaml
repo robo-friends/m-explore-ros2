@@ -1,7 +1,16 @@
 map_merge:
   ros__parameters:
+    # Full documentation: README.md → "slam_toolbox: parameters, simulation vs real world"
+    # slam_toolbox: embed each /map into one shared grid using only OccupancyGrid.info (gingineer / issue #10).
+    # When true, OpenCV merge uses identity transforms (init_pose_* ignored): placement comes from map origins.
+    # Set false to use init_pose_* like classic gmapping (unequal slam_toolbox grids may look wrong).
+    expand_slam_maps_to_common_canvas: true
+    expand_slam_maps_margin_m: 1.0
+    # With expansion on: false = identity merge (good when sim/origins already align). true = apply init_pose_*
+    # after expansion (measured robot offsets in real life). Default false for backward compatibility.
+    expand_slam_maps_apply_init_pose: false
     merging_rate: 4.0
-    discovery_rate: 0.05
+    discovery_rate: 0.5
     estimation_rate: 0.5
     estimation_confidence: 0.6
     robot_map_topic: map
@@ -19,6 +28,7 @@ map_merge:
     /robot1/map_merge/init_pose_yaw: 0.0
 
     /robot2/map_merge/init_pose_x: -3.0
+    # Relative offset vs robot1: spawn delta in Y is 1.5 - 0.5 = 1.0 m
     /robot2/map_merge/init_pose_y: 1.0
     /robot2/map_merge/init_pose_z: 0.0
     /robot2/map_merge/init_pose_yaw: 0.0
