@@ -111,6 +111,11 @@ param {
   12.default = `0.5`
   12.type = double
   12.desc = Minimum size of the frontier to consider the frontier as the exploration goal. In meters.
+
+  13.name = ~blacklist_reached
+  13.default = `false`
+  13.type = bool
+  13.desc = Blacklist a frontier once its goal has been reached. Prevents the robot from being sent forever to a frontier the sensor cannot clear (e.g. closer than its minimum range).
 }
 
 req_tf {

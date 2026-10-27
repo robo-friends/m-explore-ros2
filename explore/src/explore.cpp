@@ -70,6 +70,7 @@ Explore::Explore()
   this->declare_parameter<float>("gain_scale", 1.0);
   this->declare_parameter<float>("min_frontier_size", 0.5);
   this->declare_parameter<bool>("return_to_init", false);
+  this->declare_parameter<bool>("blacklist_reached", false);
 
   this->get_parameter("planner_frequency", planner_frequency_);
   this->get_parameter("progress_timeout", timeout);
@@ -79,6 +80,7 @@ Explore::Explore()
   this->get_parameter("gain_scale", gain_scale_);
   this->get_parameter("min_frontier_size", min_frontier_size);
   this->get_parameter("return_to_init", return_to_init_);
+  this->get_parameter("blacklist_reached", blacklist_reached_);
   this->get_parameter("robot_base_frame", robot_base_frame_);
 
   progress_timeout_ = timeout;
@@ -384,6 +386,12 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
   switch (result.code) {
     case rclcpp_action::ResultCode::SUCCEEDED:
       RCLCPP_DEBUG(logger_, "Goal was successful");
+      // A frontier still present once its goal is reached cannot be cleared
+      // by the sensor (e.g. closer than the lidar minimum range): without
+      // this, it is picked again forever and exploration never ends.
+      if (blacklist_reached_) {
+        frontier_blacklist_.push_back(frontier_goal);
+      }
       last_progress_ = this->now();
       prev_distance_ = 0;
       break;

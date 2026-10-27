@@ -66,6 +66,9 @@ By default the exploration node will start right away the frontier-based explora
 #### Returning to initial pose
 The robot will return to its initial pose after exploration if you want by defining the parameter `return_to_init` to `True` when launching the node.
 
+#### Frontiers that cannot be cleared
+A frontier the sensor cannot clear (for instance closer to the robot than the lidar minimum range) stays in the map after its goal is reached. It is then chosen again and again, the robot does not move and exploration never ends, sometimes long before the area is explored. Set the parameter `blacklist_reached` to `True` to blacklist a frontier once its goal has been reached.
+
 #### TB3 troubleshooting
 If you have trouble with TB3 in simulation, try replacing the packaged turtlebot3 simulations with the upstream repo:
 

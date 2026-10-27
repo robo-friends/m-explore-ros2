@@ -140,6 +140,7 @@ private:
   double planner_frequency_;
   double potential_scale_, orientation_scale_, gain_scale_;
   double progress_timeout_;
+  bool blacklist_reached_ = false;
   bool visualize_;
   bool return_to_init_;
   std::string robot_base_frame_;
