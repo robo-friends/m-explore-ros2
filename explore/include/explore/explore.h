@@ -145,6 +145,9 @@ private:
   std::string robot_base_frame_;
   bool resuming_ = false;
   bool goal_active_{false};
+  // Set when exploration finished while a goal was active: the robot returns
+  // home once that goal's result arrives (see stop()).
+  bool return_pending_{false};
   rclcpp_action::GoalUUID active_goal_id_;
 };
 }  // namespace explore

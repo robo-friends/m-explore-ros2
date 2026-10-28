@@ -381,6 +381,11 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
   }
 
   goal_active_ = false;
+  if (return_pending_) {
+    return_pending_ = false;
+    returnToInitialPose();
+    return;
+  }
   switch (result.code) {
     case rclcpp_action::ResultCode::SUCCEEDED:
       RCLCPP_DEBUG(logger_, "Goal was successful");
@@ -438,6 +443,7 @@ void Explore::stop(bool finished_exploring)
 {
   RCLCPP_INFO(logger_, "Exploration stopped.");
 
+  bool goal_was_active = goal_active_;
   goal_active_ = false;
   // Only publish paused status if manually stopped (not finished exploring)
   if (!finished_exploring) {
@@ -446,17 +452,30 @@ void Explore::stop(bool finished_exploring)
     status_pub_->publish(status_msg);
   }
 
-  move_base_client_->async_cancel_all_goals();
   exploring_timer_->cancel();
 
   if (return_to_init_ && finished_exploring) {
-    returnToInitialPose();
+    if (goal_was_active) {
+      // Return only once the canceled goal's result arrives (reachedGoal).
+      // Nav2 accepts a cancel at once but ends the goal on its next cycle,
+      // and then terminates every goal it holds, including a return goal
+      // sent in the meantime, which left the robot where exploration ended.
+      RCLCPP_INFO(logger_, "Canceling the active goal before returning.");
+      return_pending_ = true;
+      move_base_client_->async_cancel_all_goals();
+    } else {
+      returnToInitialPose();
+    }
+  } else {
+    return_pending_ = false;
+    move_base_client_->async_cancel_all_goals();
   }
 }
 
 void Explore::resume()
 {
   resuming_ = true;
+  return_pending_ = false;
   RCLCPP_INFO(logger_, "Exploration resuming.");
   auto status_msg = explore_lite_msgs::msg::ExploreStatus();
   status_msg.status = explore_lite_msgs::msg::ExploreStatus::EXPLORATION_IN_PROGRESS;
