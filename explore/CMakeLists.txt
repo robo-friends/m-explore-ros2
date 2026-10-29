@@ -122,10 +122,15 @@ if(BUILD_TESTING)
 
   find_package(ament_cmake_gtest REQUIRED)
 
-  ament_add_gtest(test_explore test/test_explore.cpp)
+  ament_add_gtest(test_explore
+    test/test_explore.cpp
+    src/frontier_search.cpp
+  )
 
   target_link_libraries(test_explore
     ${geometry_msgs_TARGETS}
+    nav2_costmap_2d::nav2_costmap_2d_core
+    rclcpp::rclcpp
   )
 
 endif()

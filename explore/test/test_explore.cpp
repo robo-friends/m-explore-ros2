@@ -35,7 +35,9 @@
  *********************************************************************/
 
 #include <gtest/gtest.h>
+#include <explore/frontier_search.h>
 #include <geometry_msgs/msg/point.hpp>
+#include <nav2_costmap_2d/cost_values.hpp>
 #include <cmath>
 
 #define private public
@@ -68,6 +70,62 @@ TEST(Explore, testSameGoal)
     goal2.z = goal1.z;
     same_goal = same_point(goal1, goal2);
     EXPECT_TRUE(same_goal);
+}
+
+// Searches a free room of cells [100, 139] x [80, 120], walled with lethal
+// cells except for cells [gap_start, gap_end] of the wall at x = 140. Those
+// stay unknown, so they are the only frontier. The robot is at cell
+// (120, 100) and the map origin at (0, 0), 5-7 m away, where a centroid that
+// leaves out a cell is visibly off.
+static std::vector<frontier_exploration::Frontier>
+searchRoomWithGap(unsigned int gap_start, unsigned int gap_end)
+{
+  nav2_costmap_2d::Costmap2D map(200, 200, 0.05, 0.0, 0.0,
+                                 nav2_costmap_2d::NO_INFORMATION);
+  for (unsigned int x = 99; x <= 140; ++x) {
+    for (unsigned int y = 79; y <= 121; ++y) {
+      bool wall = x == 99 || x == 140 || y == 79 || y == 121;
+      bool gap = x == 140 && y >= gap_start && y <= gap_end;
+      if (!gap) {
+        map.setCost(x, y,
+                    wall ? nav2_costmap_2d::LETHAL_OBSTACLE :
+                           nav2_costmap_2d::FREE_SPACE);
+      }
+    }
+  }
+
+  frontier_exploration::FrontierSearch search(&map, 1.0, 1.0, 0.0,
+                                              rclcpp::get_logger("test"));
+  geometry_msgs::msg::Point robot;
+  map.mapToWorld(120, 100, robot.x, robot.y);
+  return search.searchFrom(robot);
+}
+
+TEST(FrontierSearch, testFrontierIncludesEveryCell)
+{
+  // centre of map cell i, in metres
+  auto world = [](double i) { return (i + 0.5) * 0.05; };
+
+  // {gap_start, gap_end}: the gap's middle cell, a single cell, and a gap
+  // whose mean lies between two cells
+  for (auto gap : {std::make_pair(93u, 107u), std::make_pair(100u, 100u),
+                   std::make_pair(100u, 109u)}) {
+    SCOPED_TRACE("gap of cells " + std::to_string(gap.first) + "-" +
+                 std::to_string(gap.second));
+    auto frontiers = searchRoomWithGap(gap.first, gap.second);
+    ASSERT_EQ(frontiers.size(), 1u);
+    const auto& frontier = frontiers[0];
+
+    unsigned int cells = gap.second - gap.first + 1;
+    EXPECT_EQ(frontier.size, cells);
+    EXPECT_EQ(frontier.points.size(), cells);
+    // the centroid is the mean of the gap's cells
+    EXPECT_NEAR(frontier.centroid.x, world(140), 1e-9);
+    EXPECT_NEAR(frontier.centroid.y, world((gap.first + gap.second) / 2.0),
+                1e-9);
+    // the gap cell closest to the robot is (140, 100), 20 cells away
+    EXPECT_NEAR(frontier.min_distance, 20 * 0.05, 1e-9);
+  }
 }
 
 int main(int argc, char** argv)

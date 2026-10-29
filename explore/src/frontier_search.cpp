@@ -101,10 +101,7 @@ Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
 {
   // initialize frontier structure
   Frontier output;
-  output.centroid.x = 0;
-  output.centroid.y = 0;
   output.size = 1;
-  output.min_distance = std::numeric_limits<double>::infinity();
 
   // record initial contact point for frontier
   unsigned int ix, iy;
@@ -120,6 +117,15 @@ Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
   double reference_x, reference_y;
   costmap_->indexToCells(reference, rx, ry);
   costmap_->mapToWorld(rx, ry, reference_x, reference_y);
+
+  // the initial cell is part of the frontier too: it is already flagged, so
+  // the search below never visits it again
+  output.points.push_back(output.initial);
+  output.centroid = output.initial;
+  output.min_distance =
+      sqrt(pow((double(reference_x) - output.initial.x), 2.0) +
+           pow((double(reference_y) - output.initial.y), 2.0));
+  output.middle = output.initial;
 
   while (!bfs.empty()) {
     unsigned int idx = bfs.front();
